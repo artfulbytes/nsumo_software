@@ -17,8 +17,6 @@ void main(void)
     init_clocks();
     init_pwm();
     _enable_interrupt(); // is this really needed? Try without
-    //set_duty_cycle(PWM_OUT1, 50);
-    set_duty_cycle(PWM_OUT2, 50);
     uint16_t dim_value = 0;
     uint8_t count_direction = 0;
     while(1)
