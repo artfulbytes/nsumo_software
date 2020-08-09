@@ -2,32 +2,35 @@
 #include <stdint.h>
 
 #include "pwm.h"
+#include "hw.h"
 
 #define DEFAULT_PWM_PERIOD 8000
 
 static uint16_t current_pwm_period = 0;
 
-void set_pwm_period(uint16_t pwm_period)
+static void pwm_set_period(uint16_t pwm_period)
 {
     current_pwm_period = pwm_period;
     TA1CCR0 = pwm_period-1;
 }
 
-static uint16_t get_pwm_period()
+static uint16_t pwm_get_period()
 {
     return current_pwm_period;
 }
 
 /* Set up timer 1 for PWM control
- * Output of capture&compare channel 1 is PWM_OUT1
- * Output of capture&compare channel 2 is PWM_OUT2
+ * Output of capture&compare channel 1 is PWM_OUT_0
+ * Output of capture&compare channel 2 is PWM_OUT_1
  */
-void init_pwm()
+void pwm_init()
 {
-    P2DIR |= BIT1; // P2.1 set as output
-    P2SEL |= BIT1; // P2.1 selected Timer1_A Out1
-    P2DIR |= BIT4; // P2.4 set as output
-    P2SEL |= BIT4; // P2.4 selected Timer1_A Out2
+    gpio_set_selection(GPIO_PWM_0, GPIO_SEL_1); // P2.1 select Timer1_A Out1
+    gpio_set_resistor(GPIO_PWM_0, RESISTOR_PULLUP);
+    gpio_set_direction(GPIO_PWM_0, GPIO_OUTPUT);
+    gpio_set_selection(GPIO_PWM_1, GPIO_SEL_1); // P2.1 select Timer1_A Out2
+    gpio_set_resistor(GPIO_PWM_1, RESISTOR_PULLUP);
+    gpio_set_direction(GPIO_PWM_1, GPIO_OUTPUT);
 
     // TASSEL_X: clock source  (TASSEL_2 = SMCLK)
     // ID_X: input divisor     (ID_1 = divide by 1)
@@ -42,26 +45,26 @@ void init_pwm()
     TA1CCTL1 |= OUTMOD_7;
     TA1CCTL2 |= OUTMOD_7;
 
-    set_pwm_period(DEFAULT_PWM_PERIOD);
-    set_duty_cycle(PWM_OUT1, 0);
-    set_duty_cycle(PWM_OUT2, 0);
+    pwm_set_period(DEFAULT_PWM_PERIOD);
+    pwm_set_duty_cycle(PWM_OUT_0, 0);
+    pwm_set_duty_cycle(PWM_OUT_1, 0);
 }
 
-void set_duty_cycle(PWM_OUTPUT pwm_out, uint16_t duty_cycle_percent)
+void pwm_set_duty_cycle(PWM_OUTPUT pwm_out, uint16_t duty_cycle_percent)
 {
     uint16_t duty_cycle = 0;
 
     if (duty_cycle_percent > 0)
     {
-        duty_cycle = duty_cycle_percent * (get_pwm_period() / 100) - 1;
+        duty_cycle = duty_cycle_percent * (pwm_get_period() / 100) - 1;
     }
 
     switch (pwm_out)
     {
-    case PWM_OUT1:
+    case PWM_OUT_0:
         TA1CCR1 = duty_cycle;
         break;
-    case PWM_OUT2:
+    case PWM_OUT_1:
         TA1CCR2 |= duty_cycle;
         break;
     }

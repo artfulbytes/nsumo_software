@@ -3,11 +3,11 @@
 
 typedef enum
 {
-    PWM_OUT1,
-    PWM_OUT2
+    PWM_OUT_0,
+    PWM_OUT_1
 } PWM_OUTPUT;
 
-void init_pwm();
-void set_duty_cycle(PWM_OUTPUT pwm_out, uint16_t duty_cycle_percent);
+void pwm_init();
+void pwm_set_duty_cycle(PWM_OUTPUT pwm_out, uint16_t duty_cycle_percent);
 
-#endif __pwm
+#endif //__pwm
