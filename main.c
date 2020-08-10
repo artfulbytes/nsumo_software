@@ -3,9 +3,10 @@
 #include <stdint.h>
 #include "pwm.h"
 #include "hw.h"
+#include "motor.h"
 
 // Test program to dim the led up and down using pwm
-void test_program_dimming_led()
+void test_dimming_led()
 {
     volatile unsigned int i;
     uint16_t dim_value = 0;
@@ -22,6 +23,15 @@ void test_program_dimming_led()
     }
 }
 
+void test_run_motors()
+{
+    motor_init();
+    motor_set_mode(MOTOR_FRONT_LEFT, FORWARD);
+    motor_set_mode(MOTOR_BACK_LEFT, FORWARD);
+    pwm_set_duty_cycle(PWM_OUT_0, 60);
+    while(1);
+}
+
 void main(void)
 {
     hw_init();
@@ -30,5 +40,6 @@ void main(void)
     // TODO: is this really needed? Try without
     _enable_interrupt();
 
-    test_program_dimming_led();
+    //test_dimming_led();
+    test_run_motors();
 }
