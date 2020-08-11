@@ -3,10 +3,8 @@
 
 typedef enum
 {
-    MOTOR_FRONT_LEFT,
-    MOTOR_BACK_LEFT,
-    MOTOR_FRONT_RIGHT,
-    MOTOR_BACK_RIGHT
+    MOTORS_LEFT,
+    MOTORS_RIGHT,
 } motor_t;
 
 typedef enum
@@ -17,6 +15,5 @@ typedef enum
 } motor_mode_t;
 
 void motor_init();
-void motor_set_mode(motor_t motor, motor_mode_t mode);
 
 #endif //__motor

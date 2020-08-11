@@ -50,9 +50,14 @@ void pwm_init()
     pwm_set_duty_cycle(PWM_OUT_1, 0);
 }
 
-void pwm_set_duty_cycle(PWM_OUTPUT pwm_out, uint16_t duty_cycle_percent)
+void pwm_set_duty_cycle(pwm_out_t pwm_out, uint16_t duty_cycle_percent)
 {
     uint16_t duty_cycle = 0;
+
+    if (duty_cycle_percent > 100)
+    {
+        duty_cycle_percent = 100;
+    }
 
     if (duty_cycle_percent > 0)
     {

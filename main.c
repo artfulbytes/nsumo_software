@@ -26,9 +26,9 @@ void test_dimming_led()
 void test_run_motors()
 {
     motor_init();
-    motor_set_mode(MOTOR_FRONT_LEFT, FORWARD);
-    motor_set_mode(MOTOR_BACK_LEFT, FORWARD);
-    pwm_set_duty_cycle(PWM_OUT_0, 60);
+    //motor_set_mode(MOTOR_LEFT, FORWARD);
+    //motor_set_mode(MOTOR_RIGHT, FORWARD);
+    //pwm_set_duty_cycle(PWM_OUT_0, 60);
     while(1);
 }
 

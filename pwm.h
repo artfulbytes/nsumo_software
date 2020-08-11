@@ -1,13 +1,15 @@
 #ifndef __pwm
 #define __pwm
 
+#include "stdint.h"
+
 typedef enum
 {
     PWM_OUT_0,
     PWM_OUT_1
-} PWM_OUTPUT;
+} pwm_out_t;
 
 void pwm_init();
-void pwm_set_duty_cycle(PWM_OUTPUT pwm_out, uint16_t duty_cycle_percent);
+void pwm_set_duty_cycle(pwm_out_t pwm_out, uint16_t duty_cycle_percent);
 
 #endif //__pwm
