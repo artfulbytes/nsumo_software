@@ -26,10 +26,8 @@ static uint16_t pwm_get_period()
 void pwm_init()
 {
     gpio_set_selection(GPIO_PWM_0, GPIO_SEL_1); // P2.1 select Timer1_A Out1
-    gpio_set_resistor(GPIO_PWM_0, RESISTOR_PULLUP);
     gpio_set_direction(GPIO_PWM_0, GPIO_OUTPUT);
     gpio_set_selection(GPIO_PWM_1, GPIO_SEL_1); // P2.1 select Timer1_A Out2
-    gpio_set_resistor(GPIO_PWM_1, RESISTOR_PULLUP);
     gpio_set_direction(GPIO_PWM_1, GPIO_OUTPUT);
 
     // TASSEL_X: clock source  (TASSEL_2 = SMCLK)
