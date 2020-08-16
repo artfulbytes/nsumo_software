@@ -1,9 +1,9 @@
-//#include <msp430.h>
 #include <msp430.h>
 #include <stdint.h>
 #include "pwm.h"
 #include "hw.h"
 #include "motor.h"
+#include "adc.h"
 
 // Test program to dim the led up and down using pwm
 void test_dimming_led()
@@ -11,7 +11,7 @@ void test_dimming_led()
     volatile unsigned int i;
     uint16_t dim_value = 0;
     uint8_t count_direction = 0;
-    while(1)
+    for(;;)
     {
         if (dim_value >= 50 || dim_value <= 0) {
             count_direction ^= 1;
@@ -26,10 +26,19 @@ void test_dimming_led()
 void test_run_motors()
 {
     motor_init();
-    //motor_set_mode(MOTOR_LEFT, FORWARD);
-    //motor_set_mode(MOTOR_RIGHT, FORWARD);
-    //pwm_set_duty_cycle(PWM_OUT_0, 60);
-    while(1);
+    motor_set_speed(MOTORS_LEFT, 50);
+    motor_set_speed(MOTORS_RIGHT, 50);
+    for(;;);
+}
+
+void test_adc()
+{
+    adc_init();
+    adc_channel_values_t channel_values;
+    for(;;)
+    {
+        adc_read_channels(&channel_values);
+    }
 }
 
 void main(void)
@@ -37,9 +46,9 @@ void main(void)
     hw_init();
     pwm_init();
 
-    // TODO: is this really needed? Try without
     _enable_interrupt();
 
     //test_dimming_led();
-    test_run_motors();
+    //test_run_motors();
+    test_adc();
 }
