@@ -4,6 +4,7 @@
 #include "hw.h"
 #include "motor.h"
 #include "adc.h"
+#include "sensors.h"
 
 // Test program to dim the led up and down using pwm
 void test_dimming_led()
@@ -41,14 +42,26 @@ void test_adc()
     }
 }
 
+void test_sensors()
+{
+    sensors_init();
+    sensor_distances_t distances;
+
+    for(;;)
+    {
+        sensors_get_distances(&distances);
+    }
+}
+
 void main(void)
 {
     hw_init();
     pwm_init();
 
-    _enable_interrupt();
+    _enable_interrupts();
 
     //test_dimming_led();
     //test_run_motors();
-    test_adc();
+    //test_adc();
+    test_sensors();
 }
