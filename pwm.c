@@ -4,7 +4,7 @@
 #include "pwm.h"
 #include "hw.h"
 
-#define DEFAULT_PWM_PERIOD 8000
+#define DEFAULT_PWM_PERIOD 8000 // 8 ms (125 Hz) TODO: A good period?
 
 static uint16_t current_pwm_period = 0;
 
@@ -36,6 +36,7 @@ void pwm_init()
     TA1CTL |= TASSEL_2 + MC_1;
 
     // OUTMOD_7 = Reset/Set mode (positive PWM)
+    // Example for pwm 0 signal with CCR1 register
     // -----------------__________
     // <------------T------------>
     // <---------TA1CCR0--------->
@@ -59,6 +60,7 @@ void pwm_set_duty_cycle(pwm_out_t pwm_out, uint16_t duty_cycle_percent)
 
     if (duty_cycle_percent > 0)
     {
+        // TODO: Double check division for different pwm periods!
         duty_cycle = duty_cycle_percent * (pwm_get_period() / 100) - 1;
     }
 
