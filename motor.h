@@ -18,5 +18,6 @@ typedef enum
 
 void motor_init();
 void motor_set_speed(motor_t motor, int16_t speed);
+void motor_stop_safely();
 
 #endif //__motor
