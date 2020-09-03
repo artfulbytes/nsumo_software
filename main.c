@@ -5,6 +5,8 @@
 #include "motor.h"
 #include "adc.h"
 #include "sensors.h"
+#include "ir_remote.h"
+#include "state_machine.h"
 
 // Test program to dim the led up and down using pwm
 void test_dimming_led()
@@ -27,8 +29,8 @@ void test_dimming_led()
 void test_run_motors()
 {
     motor_init();
-    motor_set_speed(MOTORS_LEFT, 50);
-    motor_set_speed(MOTORS_RIGHT, 50);
+    motor_set_speed(MOTORS_LEFT, 40);
+    motor_set_speed(MOTORS_RIGHT, 40);
     for(;;);
 }
 
@@ -53,15 +55,43 @@ void test_sensors()
     }
 }
 
+void test_ir_receiver()
+{
+    ir_remote_init();
+    volatile uint16_t keypresses = 0;
+
+    for(;;)
+    {
+        if (ir_remote_get_command() != COMMAND_NONE) {
+            keypresses++;
+        }
+    }
+}
+
+void test_state_machine()
+{
+    state_machine_init();
+    ir_remote_init();
+    motor_init();
+    for(;;) {
+        volatile ir_remote_command_t ir_command = ir_remote_get_command();
+        if (ir_command != COMMAND_NONE) {
+            state_machine_handle_ir_command(ir_command);
+        }
+        __delay_cycles(50000);
+    }
+}
+
 void main(void)
 {
     hw_init();
-    pwm_init();
 
     _enable_interrupts();
 
     //test_dimming_led();
     //test_run_motors();
     //test_adc();
-    test_sensors();
+    //test_sensors();
+    //test_ir_receiver();
+    test_state_machine();
 }
