@@ -1,6 +1,6 @@
 #include <msp430.h>
 #include <stdint.h>
-#include <ir_remote.h>
+#include "ir_remote.h"
 
 // NEC protocol
 #define T_AGC_USEC 9000
