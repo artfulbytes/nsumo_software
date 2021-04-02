@@ -2,19 +2,19 @@
 #include <stdint.h>
 
 #include "pwm.h"
-#include "hw.h"
+#include "gpio.h"
 
 #define DEFAULT_PWM_PERIOD 8000 // 8 ms (125 Hz) TODO: A good period?
 
 static uint16_t current_pwm_period = 0;
 
-static void pwm_set_period(uint16_t pwm_period)
+static void set_period(uint16_t pwm_period)
 {
     current_pwm_period = pwm_period;
     TA1CCR0 = pwm_period-1;
 }
 
-static uint16_t pwm_get_period()
+static uint16_t get_period()
 {
     return current_pwm_period;
 }
@@ -44,7 +44,7 @@ void pwm_init()
     TA1CCTL1 |= OUTMOD_7;
     TA1CCTL2 |= OUTMOD_7;
 
-    pwm_set_period(DEFAULT_PWM_PERIOD);
+    set_period(DEFAULT_PWM_PERIOD);
     pwm_set_duty_cycle(PWM_OUT_0, 0);
     pwm_set_duty_cycle(PWM_OUT_1, 0);
 }
@@ -61,7 +61,7 @@ void pwm_set_duty_cycle(pwm_out_t pwm_out, uint16_t duty_cycle_percent)
     if (duty_cycle_percent > 0)
     {
         // TODO: Double check division for different pwm periods!
-        duty_cycle = duty_cycle_percent * (pwm_get_period() / 100) - 1;
+        duty_cycle = duty_cycle_percent * (get_period() / 100) - 1;
     }
 
     switch (pwm_out)

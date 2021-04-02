@@ -1,4 +1,4 @@
-#include "hw.h"
+#include "gpio.h"
 #include "stdint.h"
 
 static volatile uint8_t* port_dir_registers[] =
@@ -26,7 +26,7 @@ static volatile uint8_t* port_sel_registers[] =
 // TODO: look into if this default configuring is dangerous
 // I'm also getting "Detected uninitialized Port ..."
 // Update: Output as default seems okay, and the warning/remark
-// about uninitialized is wrong, it just can't detect the way I
+// about uninitialized from CCS is wrong, it just can't detect the way I
 // initialize my ports.
 static const gpio_config_t gpio_initial_config[] =
 {
@@ -49,7 +49,7 @@ static const gpio_config_t gpio_initial_config[] =
     {GPIO_P27, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
 };
 
-static void gpio_set_initial_config()
+void gpio_init()
 {
     int cfg_idx;
     for (cfg_idx = 0; cfg_idx < sizeof(gpio_initial_config); cfg_idx++) {
@@ -117,21 +117,3 @@ void gpio_set_selection(gpio_t gpio, gpio_selection_t selection)
     }
 }
 
-static void hw_init_clocks()
-{
-    BCSCTL1 = CALBC1_1MHZ; // Basic Clock System Control 1 (MCLK?)
-    DCOCTL = CALDCO_1MHZ;  // DCO Clock Frequency Control
-}
-
-static void hw_stop_watchdog_timer()
-{
-    // Stop this or the MSP430 will keep rebooting
-    WDTCTL = WDTPW | WDTHOLD;
-}
-
-void hw_init()
-{
-    hw_stop_watchdog_timer();
-    hw_init_clocks();
-    gpio_set_initial_config();
-}

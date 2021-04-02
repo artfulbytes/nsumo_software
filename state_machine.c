@@ -1,207 +1,148 @@
-#include "ir_remote.h"
-#include "motor.h"
+#include "state_machine.h"
+#include "drive.h"
+#include "enemy_detection.h"
+#include "line_detection.h"
+#include "time.h"
+#include "stdbool.h"
 
 typedef enum
 {
-    ROBOT_STOP,
-    ROBOT_FORWARD,
-    ROBOT_REVERSE,
-    ROBOT_LEFT,
-    ROBOT_RIGHT,
-    ROBOT_SET_SPEED_10,
-    ROBOT_SET_SPEED_20,
-    ROBOT_SET_SPEED_30,
-    ROBOT_SET_SPEED_40,
-    ROBOT_SET_SPEED_50,
-    ROBOT_SET_SPEED_60,
-    ROBOT_SET_SPEED_70,
-    ROBOT_SET_SPEED_80,
-    ROBOT_SET_SPEED_90,
-    ROBOT_SET_SPEED_100
-} robot_command_t;
+    MAIN_STATE_SEARCH,
+    MAIN_STATE_ATTACK,
+    MAIN_STATE_RETREAT,
+    MAIN_STATE_TEST,
+} main_state_t;
 
-typedef enum
-{
-    STATE_STOP,
-    STATE_FORWARD,
-    STATE_REVERSE,
-    STATE_LEFT,
-    STATE_RIGHT
-} robot_state_t;
+typedef enum {
+    RETREAT_STATE_NONE,
+    RETREAT_STATE_DRIVE_BACK,
+    RETREAT_STATE_DRIVE_FORWARD,
+    RETREAT_STATE_DRIVE_ROTATE_LEFT,
+    RETREAT_STATE_DRIVE_ROTATE_RIGHT,
+    RETREAT_STATE_DRIVE_ARCTURN_LEFT,
+    RETREAT_STATE_DRIVE_ARCTURN_RIGHT,
+} retreat_state_t;
 
-static const robot_command_t ir_command_to_robot_command[] =
+static const bool retreat_state_timeouts[] =
 {
-    [COMMAND_1] = ROBOT_SET_SPEED_10,
-    [COMMAND_2] = ROBOT_SET_SPEED_20,
-    [COMMAND_3] = ROBOT_SET_SPEED_30,
-    [COMMAND_4] = ROBOT_SET_SPEED_40,
-    [COMMAND_5] = ROBOT_SET_SPEED_50,
-    [COMMAND_6] = ROBOT_SET_SPEED_60,
-    [COMMAND_7] = ROBOT_SET_SPEED_70,
-    [COMMAND_8] = ROBOT_SET_SPEED_80,
-    [COMMAND_9] = ROBOT_SET_SPEED_90,
-    [COMMAND_0] = ROBOT_SET_SPEED_100,
-    [COMMAND_STAR] = ROBOT_STOP,
-    [COMMAND_HASH] = ROBOT_STOP,
-    [COMMAND_UP] = ROBOT_FORWARD,
-    [COMMAND_DOWN] = ROBOT_REVERSE,
-    [COMMAND_LEFT] = ROBOT_LEFT,
-    [COMMAND_RIGHT] = ROBOT_RIGHT,
-    [COMMAND_OK] = ROBOT_STOP,
-    [COMMAND_NONE] = ROBOT_STOP
+    [RETREAT_STATE_NONE] = 0,
+    [RETREAT_STATE_DRIVE_BACK] = 300,
+    [RETREAT_STATE_DRIVE_FORWARD] = 300,
+    [RETREAT_STATE_DRIVE_ROTATE_LEFT] = 150,
+    [RETREAT_STATE_DRIVE_ROTATE_RIGHT] = 150,
+    [RETREAT_STATE_DRIVE_ARCTURN_LEFT] = 250,
+    [RETREAT_STATE_DRIVE_ARCTURN_RIGHT] = 250,
 };
 
-// TODO: struct for holding speed and state?
-static robot_state_t current_state = STATE_STOP;
-static uint16_t current_speed = 0;
+static uint32_t retreat_state_start_time = 0;
+static retreat_state_t current_retreat_state = RETREAT_STATE_NONE;
 
-static uint16_t state_machine_command_to_speed(robot_command_t command) {
-    switch(command) {
-    case ROBOT_SET_SPEED_10: return 10;
-    case ROBOT_SET_SPEED_20: return 20;
-    case ROBOT_SET_SPEED_30: return 30;
-    case ROBOT_SET_SPEED_40: return 40;
-    case ROBOT_SET_SPEED_50: return 50;
-    case ROBOT_SET_SPEED_60: return 60;
-    case ROBOT_SET_SPEED_70: return 70;
-    case ROBOT_SET_SPEED_80: return 80;
-    case ROBOT_SET_SPEED_90: return 80;
-    case ROBOT_SET_SPEED_100: return 100;
-    }
-    return 0;
-}
-
-static robot_state_t handle_stop_command()
+static void set_retreat_drive(retreat_state_t retreat_state)
 {
-    if (current_state == STATE_STOP) {
-        return STATE_STOP;
+    switch (RETREAT_STATE_NONE) {
+    case RETREAT_STATE_NONE:
+        break;
+    case RETREAT_STATE_DRIVE_BACK:
+        break;
+    case RETREAT_STATE_DRIVE_FORWARD:
+        break;
+    case RETREAT_STATE_DRIVE_ROTATE_LEFT:
+        break;
+    case RETREAT_STATE_DRIVE_ROTATE_RIGHT:
+        break;
+    case RETREAT_STATE_DRIVE_ARCTURN_LEFT:
+        break;
+    case RETREAT_STATE_DRIVE_ARCTURN_RIGHT:
+        break;
     }
-    motor_set_speed(MOTORS_LEFT, 0);
-    motor_set_speed(MOTORS_RIGHT, 0);
-    return STATE_STOP;
 }
 
-static robot_state_t handle_forward_command()
+static void reset_retreat_state_start_time()
 {
-    if (current_state == STATE_FORWARD) {
-        return STATE_FORWARD;
-    }
-    if (current_state != STATE_STOP) {
-        motor_stop_safely();
-    }
-    motor_set_speed(MOTORS_LEFT, current_speed);
-    motor_set_speed(MOTORS_RIGHT, current_speed);
-    return STATE_FORWARD;
+    retreat_state_start_time = time_ms();
 }
 
-static robot_state_t handle_reverse_command()
+static bool is_retreat_state_done()
 {
-    if (current_state == STATE_REVERSE) {
-        return STATE_REVERSE;
-    }
-    if (current_state != STATE_STOP) {
-        motor_stop_safely();
-    }
-    motor_set_speed(MOTORS_LEFT, -current_speed);
-    motor_set_speed(MOTORS_RIGHT, -current_speed);
-    return STATE_REVERSE;
+    return (time_ms() - retreat_state_start_time) >= retreat_state_timeouts[current_retreat_state];
 }
 
-static robot_state_t handle_left_command()
+/* TODO: Comment... Goal of the retreat machine is to ... */
+/* TODO: Comment each state too */
+/* TODO: Handle the case when we detect line front right/left<->back right/left in
+ * quick succession, so we don't get stuck! */
+static main_state_t state_machine_retreat_run()
 {
-    if (current_state == STATE_LEFT) {
-        return STATE_LEFT;
+    retreat_state_t next_retreat_state = current_retreat_state;
+    const line_detection_t line_detection = line_detection_get();
+    switch (line_detection) {
+    case LINE_DETECTION_NONE:
+        /* Do nothing, instead check time passed below */
+        break;
+    case LINE_DETECTION_FRONT:
+    case LINE_DETECTION_FRONT_LEFT:
+    case LINE_DETECTION_FRONT_RIGHT:
+        next_retreat_state = RETREAT_STATE_DRIVE_BACK;
+        break;
+    case LINE_DETECTION_BACK:
+    case LINE_DETECTION_BACK_LEFT:
+    case LINE_DETECTION_BACK_RIGHT:
+        next_retreat_state = RETREAT_STATE_DRIVE_FORWARD;
+        break;
+    case LINE_DETECTION_LEFT:
+        next_retreat_state = RETREAT_STATE_DRIVE_ARCTURN_RIGHT;
+        break;
+    case LINE_DETECTION_RIGHT:
+        next_retreat_state = RETREAT_STATE_DRIVE_ARCTURN_LEFT;
+        break;
     }
-    if (current_state != STATE_STOP) {
-        motor_stop_safely();
+
+    /* Keep resetting the time until we no longer detect the line */
+    if (line_detection != LINE_DETECTION_NONE) {
+        reset_retreat_state_start_time();
     }
-    motor_set_speed(MOTORS_LEFT, -current_speed);
-    motor_set_speed(MOTORS_RIGHT, current_speed);
-    return STATE_LEFT;
+
+    if (is_retreat_state_done()) {
+        current_retreat_state = RETREAT_STATE_NONE;
+        /* TODO: Make it possible to do two retreat states after each other, get_next_retreat_state...
+         * and keep int of how many retreat states we been in, we are only done when this is 2 (or 1 for forward and back...)
+         * reset this count as soon as we detect a line */
+    }
+
+    if (current_retreat_state != RETREAT_STATE_NONE) {
+        return MAIN_STATE_RETREAT;
+    } else {
+        retreat_state_start_time = 0;
+        /* TODO: What if we detect enemy? */
+        return MAIN_STATE_SEARCH;
+    }
 }
 
-static robot_state_t handle_right_command()
+static void init()
 {
-    if (current_state == STATE_RIGHT) {
-        return STATE_RIGHT;
-    }
-    if (current_state != STATE_STOP) {
-        motor_stop_safely();
-    }
-    motor_set_speed(MOTORS_LEFT, current_speed);
-    motor_set_speed(MOTORS_RIGHT, -current_speed);
-    return STATE_RIGHT;
+    /* TODO: Init time here? */
+    enemy_detection_init();
+    line_detection_init();
 }
 
-// TODO: Add new layer/function to reduce code duplication for motor control
-static void handle_speed_command(robot_command_t speed_command)
+void state_machine_run()
 {
-    uint16_t new_speed = state_machine_command_to_speed(speed_command);
+    init();
 
-    switch(current_state) {
-    case STATE_STOP:
-        break;
-    case STATE_FORWARD:
-        motor_set_speed(MOTORS_LEFT, new_speed);
-        motor_set_speed(MOTORS_RIGHT, new_speed);
-        break;
-    case STATE_REVERSE:
-        motor_set_speed(MOTORS_LEFT, -new_speed);
-        motor_set_speed(MOTORS_RIGHT, -new_speed);
-        break;
-    case STATE_LEFT:
-        motor_set_speed(MOTORS_LEFT, -new_speed);
-        motor_set_speed(MOTORS_RIGHT, new_speed);
-        break;
-    case STATE_RIGHT:
-        motor_set_speed(MOTORS_LEFT, new_speed);
-        motor_set_speed(MOTORS_RIGHT, -new_speed);
-        break;
+    main_state_t current_state = MAIN_STATE_SEARCH;
+    main_state_t next_state = current_state;
+    while (1) {
+        switch (current_state) {
+        case MAIN_STATE_SEARCH:
+            break;
+        case MAIN_STATE_ATTACK:
+            break;
+        case MAIN_STATE_RETREAT:
+            next_state = state_machine_retreat_run();
+            break;
+        case MAIN_STATE_TEST:
+            break;
+        }
+        current_state = next_state;
     }
-    current_speed = new_speed;
 }
-
-void state_machine_handle_ir_command(ir_remote_command_t ir_command)
-{
-    if (ir_command == COMMAND_NONE) {
-        return;
-    }
-
-    robot_command_t robot_command = ir_command_to_robot_command[ir_command];
-    robot_state_t new_state = current_state;
-    switch(robot_command) {
-    case ROBOT_STOP:
-        new_state = handle_stop_command();
-        break;
-    case ROBOT_FORWARD:
-        new_state = handle_forward_command();
-        break;
-    case ROBOT_REVERSE:
-        new_state = handle_reverse_command();
-        break;
-    case ROBOT_LEFT:
-        new_state = handle_left_command();
-        break;
-    case ROBOT_RIGHT:
-        new_state = handle_right_command();
-        break;
-    case ROBOT_SET_SPEED_10:
-    case ROBOT_SET_SPEED_30:
-    case ROBOT_SET_SPEED_40:
-    case ROBOT_SET_SPEED_50:
-    case ROBOT_SET_SPEED_60:
-    case ROBOT_SET_SPEED_70:
-    case ROBOT_SET_SPEED_80:
-    case ROBOT_SET_SPEED_90:
-    case ROBOT_SET_SPEED_100:
-        handle_speed_command(robot_command);
-        break;
-    }
-    current_state = new_state;
-}
-
-void state_machine_init()
-{
-    motor_init();
-}
-

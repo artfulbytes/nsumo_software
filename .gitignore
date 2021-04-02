@@ -1,0 +1,9 @@
+obj/
+Debug/
+bin/
+.git/
+.launches/
+.settings/
+.cproject
+targetConfigs/
+.ccsproject

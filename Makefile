@@ -15,7 +15,7 @@ MSPGCC_BIN_DIR = $(MSPGCC_ROOT_DIR)/bin
 MSP_DEBUG_BIN_DIR = /home/artfulbytes/ti/ccs910/ccs/ccs_base/DebugServer/bin
 MSP_DEBUG_DRIVERS_DIR = /home/artfulbytes/ti/ccs910/ccs/ccs_base/DebugServer/drivers
 INCLUDE_GCC_DIR = /home/artfulbytes/ti/ccs910/ccs/ccs_base/msp430/include_gcc
-INCLUDE_DIRS = $(INCLUDE_GCC_DIR)
+INCLUDE_DIRS = $(INCLUDE_GCC_DIR) ./drivers
 LIB_DIRS = $(INCLUDE_GCC_DIR)
 ROOT = .
 SRC_DIR = $(ROOT)
@@ -27,13 +27,20 @@ BIN_DIR = $(ROOT)/bin
 ###########################################################
 TARGET = $(BIN_DIR)/sumobot
 SOURCES = main.c \
-          hw.c \
-          pwm.c \
-          motor.c \
-          adc.c \
-          sensors.c \
+          drivers/hw.c \
+          drivers/gpio.c \
+          drivers/pwm.c \
+          drivers/motor.c \
+          drivers/adc.c \
+          drivers/range_sensor.c \
           state_machine.c \
-          ir_remote.c
+          ir_remote.c \
+          test.c \
+          time.c \
+          drive.c \
+          enemy_detection.c \
+          line_detection.c \
+
 OBJECT_NAMES = $(SOURCES:.c=.o)
 OBJECTS = $(patsubst %,$(OBJ_DIR)/%,$(OBJECT_NAMES))
 
@@ -41,7 +48,8 @@ OBJECTS = $(patsubst %,$(OBJ_DIR)/%,$(OBJECT_NAMES))
 # Flags
 ###########################################################
 MCU = msp430g2553
-CFLAGS = -mmcu=$(MCU) $(addprefix -I,$(INCLUDE_DIRS))
+CFLAGS = -mmcu=$(MCU) $(addprefix -I,$(INCLUDE_DIRS)) -DBUILD_MCU
+
 LDFLAGS = -mmcu=$(MCU) $(addprefix -L,$(LIB_DIRS))
 
 ###########################################################
@@ -73,5 +81,5 @@ flash: $(TARGET)
 mspdeb: $(TARGET)
 	$(DEBUG) tilib gdb
 
-mspgdb: 
+mspgdb:
 	$(GDB)

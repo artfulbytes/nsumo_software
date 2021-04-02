@@ -1,5 +1,5 @@
-#ifndef __hw
-#define __hw
+#ifndef GPIO_H
+#define GPIO_H
 
 #include <msp430.h>
 
@@ -13,38 +13,32 @@
 #define GPIO_PIN(gpio)       (gpio & GPIO_PIN_MASK)
 #define GPIO_MAKE(port, pin) ((port << GPIO_PORT_OFFSET) | pin)
 
-typedef enum
-{
+typedef enum {
     GPIO_PORT_1,
     GPIO_PORT_2
 } gpio_port_t;
 
-typedef enum
-{
+typedef enum {
     RESISTOR_DISABLED,
     RESISTOR_ENABLED
 } gpio_resistor_t;
 
-typedef enum
-{
+typedef enum {
     GPIO_OUTPUT,
     GPIO_INPUT
 } gpio_dir_t;
 
-typedef enum
-{
+typedef enum {
     GPIO_LOW,
     GPIO_HIGH
 } gpio_output_t;
 
-typedef enum
-{
+typedef enum {
     GPIO_SEL_GPIO,
     GPIO_SEL_1 // ?
 } gpio_selection_t;
 
-typedef enum
-{
+typedef enum {
     // Port 1
     GPIO_ADC_LEFT_SENSOR = GPIO_MAKE(GPIO_PORT_1, BIT0),
     GPIO_ADC_FRONT_LEFT_SENSOR = GPIO_MAKE(GPIO_PORT_1, BIT1),
@@ -65,8 +59,7 @@ typedef enum
     GPIO_P27 = GPIO_MAKE(GPIO_PORT_2, BIT7)
 } gpio_t;
 
-typedef struct
-{
+typedef struct {
     gpio_t gpio;
     gpio_dir_t dir;
     gpio_output_t out;
@@ -74,11 +67,11 @@ typedef struct
     gpio_selection_t selection;
 } gpio_config_t;
 
+void gpio_init();
 void gpio_configure(const gpio_config_t* config);
 void gpio_set_direction(gpio_t gpio, gpio_dir_t direction);
 void gpio_set_output(gpio_t gpio, gpio_output_t output);
 void gpio_set_resistor(gpio_t gpio, gpio_resistor_t resistor);
 void gpio_set_selection(gpio_t gpio, gpio_selection_t selection);
-void hw_init();
 
-#endif //__hw
+#endif /* GPIO_H */

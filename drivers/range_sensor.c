@@ -1,4 +1,4 @@
-#include "sensors.h"
+#include "range_sensor.h"
 #include "adc.h"
 
 static uint16_t adc_to_distance(uint16_t adc_value)
@@ -19,14 +19,14 @@ static uint16_t adc_to_distance(uint16_t adc_value)
     return 80 - (adc_value-124) * 0.113;
 }
 
-void sensors_init()
+void range_sensor_init()
 {
     adc_init();
 }
 
-static adc_channel_values_t channel_values;
-void sensors_get_distances(sensor_distances_t* distances)
+void range_sensor_get_distances(range_sensor_distances_t* distances)
 {
+    adc_channel_values_t channel_values = { 0 };
     adc_read_channels(&channel_values);
     distances->left = adc_to_distance(channel_values.left_sensor);
     distances->front_left = adc_to_distance(channel_values.front_left_sensor);

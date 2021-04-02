@@ -1,7 +1,9 @@
-#include <msp430.h>
 #include "adc.h"
-#include "hw.h"
-#include "stdint.h"
+#include "gpio.h"
+
+#include <msp430.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #define NUM_ADC_CHANNELS 5
 
@@ -16,9 +18,13 @@ typedef enum
 } channel_t;
 
 static volatile uint16_t samples[NUM_ADC_CHANNELS];
+static bool initialized = false;
 
 void adc_init()
 {
+    if (initialized) {
+        return;
+    }
     // SREF_0: VCC (3.3v) and GND (0v) as reference
     // ADC10SHT_2: sample and hold time for 16 x ADC10CLK
     // ADC10ON: Enable ADC10
@@ -43,13 +49,14 @@ void adc_init()
     ADC10DTC0 = ADC10CT;
     // Set address to save samples to
     ADC10SA = (uint16_t)samples;
+    initialized = true;
 }
 
 void adc_read_channels(adc_channel_values_t* channel_values)
 {
     // Start sampling and conversion
     ADC10CTL0 |= ENC + ADC10SC;
-    
+
     // TODO: low power mode and wake on interrupt here instead.
     // Wait for sampling and conversion to finish
     while (ADC10CTL1 & ADC10BUSY);
