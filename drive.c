@@ -1,5 +1,10 @@
+#if BUILD_MCU
 #include "drive.h"
 #include "motor.h"
+#else
+#include "Sumobot4WheelExample/mini-sumobot/drive.h"
+#include "Sumobot4WheelExample/mini-sumobot/drivers/motor.h"
+#endif
 
 #define DUTY_CYCLE_STOP (0)
 #define DUTY_CYCLE_SLOW (20)
@@ -7,7 +12,24 @@
 #define DUTY_CYCLE_FAST (80)
 #define DUTY_CYCLE_FASTEST (100)
 
-#define ARCTURN_DIFF_CONSTANT (0.7f)
+#define ARCTURN_DIFF_CONSTANT (0.375f)
+
+#if 0
+static const char *drive_str(drive_t drive)
+{
+    switch (drive)
+    {
+    case STOP: return "STOP";
+    case FORWARD: return "FORWARD";
+    case REVERSE: return "REVERSE";
+    case ROTATE_LEFT: return "ROTATE_LEFT";
+    case ROTATE_RIGHT: return "ROTATE_RIGHT";
+    case ARCTURN_LEFT: return "ARCTURN_LEFT";
+    case ARCTURN_RIGHT: return "ARCTURN_RIGHT";
+    }
+    return "";
+}
+#endif
 
 static uint32_t get_duty_cycle(drive_speed_t drive_speed)
 {
@@ -20,15 +42,17 @@ static uint32_t get_duty_cycle(drive_speed_t drive_speed)
     return DUTY_CYCLE_STOP;
 }
 
-void set_drive(drive_t drive, drive_speed_t drive_speed)
+void drive_stop()
+{
+    motor_set_duty_cycle(MOTORS_LEFT, DUTY_CYCLE_STOP);
+    motor_set_duty_cycle(MOTORS_RIGHT, DUTY_CYCLE_STOP);
+}
+
+void drive_set(drive_t drive, drive_speed_t drive_speed)
 {
     const uint32_t duty_cycle = get_duty_cycle(drive_speed);
     switch (drive)
     {
-    case DRIVE_STOP:
-        motor_set_duty_cycle(MOTORS_LEFT, DUTY_CYCLE_STOP);
-        motor_set_duty_cycle(MOTORS_RIGHT, DUTY_CYCLE_STOP);
-        break;
     case DRIVE_FORWARD:
         motor_set_duty_cycle(MOTORS_LEFT, duty_cycle);
         motor_set_duty_cycle(MOTORS_RIGHT, duty_cycle);

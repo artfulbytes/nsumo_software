@@ -68,7 +68,7 @@ void motor_set_duty_cycle(motors_t motors, int16_t duty_cycle)
         set_mode(motors, MOTOR_MODE_STOP);
     }
 
-    duty_cycle = get_scaled_duty_cycle;
+    duty_cycle = get_scaled_duty_cycle(duty_cycle);
     pwm_set_duty_cycle(motor_controls[motors].pwm_out, duty_cycle);
 }
 
@@ -80,8 +80,8 @@ void motor_set_duty_cycle(motors_t motors, int16_t duty_cycle)
  */
 void motor_stop_safely()
 {
-    motor_set_speed(MOTORS_LEFT, 0);
-    motor_set_speed(MOTORS_RIGHT, 0);
+    motor_set_duty_cycle(MOTORS_LEFT, 0);
+    motor_set_duty_cycle(MOTORS_RIGHT, 0);
     __delay_cycles(200000); /* TODO: Maybe use the PWM timer temporarily instead */
 }
 

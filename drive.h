@@ -9,7 +9,6 @@ typedef enum {
 } drive_speed_t;
 
 typedef enum {
-    DRIVE_STOP,
     DRIVE_FORWARD,
     DRIVE_REVERSE,
     DRIVE_ROTATE_LEFT,
@@ -19,6 +18,7 @@ typedef enum {
 } drive_t;
 
 void drive_init(void);
-void drive_set(drive_t drive);
+void drive_stop();
+void drive_set(drive_t drive, drive_speed_t drive_speed);
 
 #endif /* DRIVE_H */

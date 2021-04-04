@@ -3,21 +3,18 @@
 
 #include <stdint.h>
 
-typedef enum {
-    ENEMY_POSITION_UNKNOWN,
-    ENEMY_POSITION_LEFT,
-    ENEMY_POSITION_FRONT_LEFT,
-    ENEMY_POSITION_FRONT,
-    ENEMY_POSITION_FRONT_RIGHT,
-    ENEMY_POSITION_RIGHT
-} enemy_position_t;
-
-typedef struct enemy_detection {
-    enemy_position_t position;
-    uint16_t distance;
+/* Enum can be used as bitwise flags */
+typedef enum enemy_detection {
+    ENEMY_DETECTION_NONE = 0,
+    ENEMY_DETECTION_LEFT = 1,
+    ENEMY_DETECTION_FRONT_LEFT = 2,
+    ENEMY_DETECTION_FRONT = 4,
+    ENEMY_DETECTION_FRONT_RIGHT = 8,
+    ENEMY_DETECTION_RIGHT = 16
 } enemy_detection_t;
 
+/* TODO: Rework: Need to retrieve distances as well...*/
+uint8_t enemy_detection_get(void);
 void enemy_detection_init(void);
-enemy_detection_t enemy_detection_get(void);
 
 #endif /* ENEMY_DETECTION_H */
