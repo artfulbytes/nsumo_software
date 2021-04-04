@@ -1,8 +1,8 @@
 #if BUILD_MCU
 #include "line_detection.h"
 #else
-#include "Sumobot4WheelExample/mini-sumobot/line_detection.h"
-#include "Sumobot4WheelExample/voltage_lines.h"
+#include "NsumoController/nsumo/line_detection.h"
+#include "NsumoController/voltage_lines.h"
 #include "microcontroller_c_bindings.h"
 #endif
 

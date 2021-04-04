@@ -2,8 +2,8 @@
 #include "drive.h"
 #include "motor.h"
 #else
-#include "Sumobot4WheelExample/mini-sumobot/drive.h"
-#include "Sumobot4WheelExample/mini-sumobot/drivers/motor.h"
+#include "NsumoController/nsumo/drive.h"
+#include "NsumoController/nsumo/drivers/motor.h"
 #endif
 
 #define DUTY_CYCLE_STOP (0)

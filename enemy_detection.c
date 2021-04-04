@@ -1,9 +1,9 @@
 #ifdef BUILD_MCU
 #include "enemy_detection.h"
 #else /* Simulator */
-#include "Sumobot4WheelExample/mini-sumobot/enemy_detection.h"
+#include "NsumoController/nsumo/enemy_detection.h"
 #include "microcontroller_c_bindings.h"
-#include "Sumobot4WheelExample/voltage_lines.h"
+#include "NsumoController/voltage_lines.h"
 #endif
 
 #include <stdbool.h>
