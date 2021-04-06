@@ -2,12 +2,15 @@
 #include "motor.h"
 #include "adc.h"
 #include "pwm.h"
+#include "gpio.h"
 #include "range_sensor.h"
 #include "ir_remote.h"
 #include "state_machine_ir.h"
+#include "time.h"
 
 void test_dimming_led()
 {
+    pwm_init();
     volatile unsigned int i;
     uint16_t dim_value = 0;
     uint8_t count_direction = 0;
@@ -26,8 +29,8 @@ void test_dimming_led()
 void test_run_motors()
 {
     motor_init();
-    motor_set_speed(MOTORS_LEFT, 40);
-    motor_set_speed(MOTORS_RIGHT, 40);
+    motor_set_duty_cycle(MOTORS_LEFT, 40);
+    motor_set_duty_cycle(MOTORS_RIGHT, 40);
     for(;;);
 }
 
@@ -37,7 +40,7 @@ void test_adc()
     adc_channel_values_t channel_values;
     for(;;)
     {
-        adc_read_channels(&channel_values);
+        adc_read(&channel_values);
     }
 }
 
@@ -51,6 +54,7 @@ void test_range_sensors()
     }
 }
 
+#if 0
 void test_ir_receiver()
 {
     ir_remote_init();
@@ -77,3 +81,4 @@ void test_state_machine()
         __delay_cycles(50000);
     }
 }
+#endif

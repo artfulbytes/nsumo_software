@@ -1,5 +1,6 @@
 #include "gpio.h"
-#include "stdint.h"
+#include "defines.h"
+#include <stdint.h>
 
 static volatile uint8_t* port_dir_registers[] =
 {
@@ -20,24 +21,22 @@ static volatile uint8_t* port_out_registers[] =
 static volatile uint8_t* port_sel_registers[] =
 {
     &P1SEL,
-    &P2SEL
+    &P1SEL2,
+    &P2SEL,
+    &P2SEL2
 };
 
-// TODO: look into if this default configuring is dangerous
-// I'm also getting "Detected uninitialized Port ..."
-// Update: Output as default seems okay, and the warning/remark
-// about uninitialized from CCS is wrong, it just can't detect the way I
-// initialize my ports.
+
 static const gpio_config_t gpio_initial_config[] =
 {
-    {GPIO_ADC_LEFT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_ADC_FRONT_LEFT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_ADC_FRONT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_ADC_FRONT_RIGHT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_ADC_RIGHT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_P15, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_P16, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_P17, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_ADC_LEFT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_1},
+    {GPIO_UART_RXD, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_3},
+    {GPIO_UART_TXD, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_3},
+    {GPIO_ADC_FRONT_LEFT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_1},
+    {GPIO_ADC_FRONT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_1},
+    {GPIO_ADC_FRONT_RIGHT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_1},
+    {GPIO_ADC_RIGHT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_1},
+    {GPIO_P17, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_1},
 
     {GPIO_MOTORS_LEFT_CC_1, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
     {GPIO_PWM_0, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
@@ -52,7 +51,7 @@ static const gpio_config_t gpio_initial_config[] =
 void gpio_init()
 {
     int cfg_idx;
-    for (cfg_idx = 0; cfg_idx < sizeof(gpio_initial_config); cfg_idx++) {
+    for (cfg_idx = 0; cfg_idx < ARRAY_SIZE(gpio_initial_config); cfg_idx++) {
         gpio_configure(&gpio_initial_config[cfg_idx]);
     }
 }
@@ -109,10 +108,17 @@ void gpio_set_selection(gpio_t gpio, gpio_selection_t selection)
     switch (selection)
     {
     case GPIO_SEL_GPIO:
-        *port_sel_registers[GPIO_PORT(gpio)] &= ~GPIO_PIN(gpio);
+        *port_sel_registers[GPIO_PORT(gpio) * 2] &= ~GPIO_PIN(gpio);
         break;
     case GPIO_SEL_1:
-        *port_sel_registers[GPIO_PORT(gpio)] |= GPIO_PIN(gpio);
+        *port_sel_registers[GPIO_PORT(gpio) * 2] |= GPIO_PIN(gpio);
+        break;
+    case GPIO_SEL_2:
+        *port_sel_registers[GPIO_PORT(gpio) * 2 + 1] |= GPIO_PIN(gpio);
+        break;
+    case GPIO_SEL_3:
+        *port_sel_registers[GPIO_PORT(gpio) * 2] |= GPIO_PIN(gpio);
+        *port_sel_registers[GPIO_PORT(gpio) * 2 + 1] |= GPIO_PIN(gpio);
         break;
     }
 }

@@ -1,0 +1,54 @@
+#include <msp430.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "printf.h"
+
+void uart_init(void)
+{
+    /* USCI must be reset before configuration */
+    if (UCA0CTL1 & UCSWRST) {
+        /* Configure SMCLK as clock source */
+        UCA0CTL1 |= UCSSEL_2;
+        /* Configure baud rate to 9600 as it's the maximum baud rate the Launchpad allows.
+         * Values are picked from the table in the family user guide (SLAU144).
+         * PRESCALER = UCAxBR0 + (UCAxBR1 * 256) = 104 + 0 = 104
+         * 1 MHZ / PRESCALER ~≃ 9600
+         * 8-bit, no parity bit and one stop bit. */
+        UCA0BR0 = 104;
+        UCA0BR1 = 0;
+        UCA0MCTL = UCBRS0;
+
+        /* Reset the USCI */
+        UCA0CTL1 &= ~UCSWRST;
+    }
+}
+
+/* This is the internal function used by mpaland/printf (see external/printf) */
+/* TODO: This is slow! Use buffering and interrupts? */
+void _putchar(char character)
+{
+    /* Wait for the transfer buffer */
+    while (!(IFG2 & UCA0TXIFG));
+
+    /* Transmit the character */
+    UCA0TXBUF = character;
+
+    /* If we get a line-feed, add a carriage return to make new line work
+     * properly on the other end. */
+    if (character == '\n') {
+        while (!(IFG2 & UCA0TXIFG));
+        UCA0TXBUF = '\r';
+    }
+}
+
+char uart_getchar()
+{
+    char chr = 0;
+
+    /* Check if we have received anything */
+    if (IFG2 & UCA0RXIFG) {
+        chr = UCA0RXBUF;
+    }
+
+    return chr;
+}

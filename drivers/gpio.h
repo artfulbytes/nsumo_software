@@ -3,9 +3,8 @@
 
 #include <msp430.h>
 
-// TODO: Using 16-bit atm, but this should be possible
-// with 8-bit too. But then I need to convert the bit position to
-// decimal somehow.
+/* This file contains helper definitions and helper functions to make GPIO handling easier. */
+
 #define GPIO_PORT_OFFSET     (8u)
 #define GPIO_PORT_MASK       (0xFFu << GPIO_PORT_OFFSET)
 #define GPIO_PORT(gpio)      ((gpio & GPIO_PORT_MASK) >> GPIO_PORT_OFFSET)
@@ -35,28 +34,30 @@ typedef enum {
 
 typedef enum {
     GPIO_SEL_GPIO,
-    GPIO_SEL_1 // ?
+    GPIO_SEL_1,
+    GPIO_SEL_2,
+    GPIO_SEL_3
 } gpio_selection_t;
 
 typedef enum {
-    // Port 1
-    GPIO_ADC_LEFT_SENSOR = GPIO_MAKE(GPIO_PORT_1, BIT0),
-    GPIO_ADC_FRONT_LEFT_SENSOR = GPIO_MAKE(GPIO_PORT_1, BIT1),
-    GPIO_ADC_FRONT_SENSOR = GPIO_MAKE(GPIO_PORT_1, BIT2), // 1.2 used for usb transfer
-    GPIO_ADC_FRONT_RIGHT_SENSOR = GPIO_MAKE(GPIO_PORT_1, BIT3),
-    GPIO_ADC_RIGHT_SENSOR = GPIO_MAKE(GPIO_PORT_1, BIT4),
-    GPIO_P15 = GPIO_MAKE(GPIO_PORT_1, BIT5),
-    GPIO_P16 = GPIO_MAKE(GPIO_PORT_1, BIT6),
-    GPIO_P17 = GPIO_MAKE(GPIO_PORT_1, BIT7),
-    // Port 2
-    GPIO_MOTORS_LEFT_CC_1 = GPIO_MAKE(GPIO_PORT_2, BIT0),
-    GPIO_PWM_0 = GPIO_MAKE(GPIO_PORT_2, BIT1),
-    GPIO_MOTORS_LEFT_CC_2 = GPIO_MAKE(GPIO_PORT_2, BIT2),
-    GPIO_MOTORS_RIGHT_CC_1 = GPIO_MAKE(GPIO_PORT_2, BIT3),
-    GPIO_PWM_1 = GPIO_MAKE(GPIO_PORT_2, BIT4),
-    GPIO_MOTORS_RIGHT_CC_2 = GPIO_MAKE(GPIO_PORT_2, BIT5),
-    GPIO_P26 = GPIO_MAKE(GPIO_PORT_2, BIT6),
-    GPIO_P27 = GPIO_MAKE(GPIO_PORT_2, BIT7)
+    /* Port 1 */
+    GPIO_ADC_LEFT_SENSOR = GPIO_MAKE(GPIO_PORT_1, BIT0), /* 1.0 */
+    GPIO_UART_RXD = GPIO_MAKE(GPIO_PORT_1, BIT1), /* 1.1 */
+    GPIO_UART_TXD = GPIO_MAKE(GPIO_PORT_1, BIT2), /* 1.2 (also used for USB transfer) */
+    GPIO_ADC_FRONT_LEFT_SENSOR = GPIO_MAKE(GPIO_PORT_1, BIT3), /* 1.3 */
+    GPIO_ADC_FRONT_SENSOR = GPIO_MAKE(GPIO_PORT_1, BIT4), /* 1.4 */
+    GPIO_ADC_FRONT_RIGHT_SENSOR = GPIO_MAKE(GPIO_PORT_1, BIT5), /* 1.5 */
+    GPIO_ADC_RIGHT_SENSOR = GPIO_MAKE(GPIO_PORT_1, BIT6), /* 1.6 */
+    GPIO_P17 = GPIO_MAKE(GPIO_PORT_1, BIT7), /* 1.7 */
+    /* Port 2 */
+    GPIO_MOTORS_LEFT_CC_1 = GPIO_MAKE(GPIO_PORT_2, BIT0), /* 1.0 */
+    GPIO_PWM_0 = GPIO_MAKE(GPIO_PORT_2, BIT1),  /* 1.1 */
+    GPIO_MOTORS_LEFT_CC_2 = GPIO_MAKE(GPIO_PORT_2, BIT2), /* 1.2 */
+    GPIO_MOTORS_RIGHT_CC_1 = GPIO_MAKE(GPIO_PORT_2, BIT3), /* 1.3 */
+    GPIO_PWM_1 = GPIO_MAKE(GPIO_PORT_2, BIT4), /* 1.4 */
+    GPIO_MOTORS_RIGHT_CC_2 = GPIO_MAKE(GPIO_PORT_2, BIT5), /* 1.5 */
+    GPIO_P26 = GPIO_MAKE(GPIO_PORT_2, BIT6), /* 1.6 */
+    GPIO_P27 = GPIO_MAKE(GPIO_PORT_2, BIT7) /* 1.7 */
 } gpio_t;
 
 typedef struct {

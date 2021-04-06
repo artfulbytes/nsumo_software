@@ -12,6 +12,6 @@ typedef struct {
 } adc_channel_values_t;
 
 void adc_init(void);
-void adc_read_channels(adc_channel_values_t* channels);
+void adc_read(adc_channel_values_t* channel_values);
 
 #endif /* ADC_H */

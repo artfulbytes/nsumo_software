@@ -2,9 +2,10 @@
 # Toolchain
 ###########################################################
 CC = $(MSPGCC_BIN_DIR)/msp430-elf-gcc
-#DEBUG = LD_LIBRARY_PATH=$(MSP_DEBUG_DRIVERS_DIR) $(MSP_DEBUG_BIN_DIR)/mspdebug
-DEBUG = LD_LIBRARY_PATH=$(MSP_DEBUG_DRIVERS_DIR) /home/niknil/workspace/repos/mspdebug/mspdebug
+DEBUG = LD_LIBRARY_PATH=$(MSP_DEBUG_DRIVERS_DIR) $(MSP_DEBUG_BIN_DIR)/mspdebug
 GDB = $(MSPGCC_BIN_DIR)/msp430-elf-gdb
+SIZE = $(MSPGCC_BIN_DIR)/msp430-elf-size
+READELF = $(MSPGCC_BIN_DIR)/msp430-elf-readelf
 RM = rm
 
 ###########################################################
@@ -25,7 +26,7 @@ BIN_DIR = $(ROOT)/bin
 ###########################################################
 # Files
 ###########################################################
-TARGET = $(BIN_DIR)/sumobot
+TARGET = $(BIN_DIR)/nsumo.out
 SOURCES = main.c \
           drivers/hw.c \
           drivers/gpio.c \
@@ -41,6 +42,7 @@ SOURCES = main.c \
           enemy_detection.c \
           line_detection.c \
           test.c \
+          trace.c \
 
 OBJECT_NAMES = $(SOURCES:.c=.o)
 OBJECTS = $(patsubst %,$(OBJ_DIR)/%,$(OBJECT_NAMES))
@@ -84,3 +86,9 @@ mspdeb: $(TARGET)
 
 mspgdb:
 	$(GDB)
+
+size:
+	$(SIZE) $(TARGET)
+
+readelf:
+	$(READELF) -a $(TARGET)

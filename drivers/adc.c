@@ -4,67 +4,116 @@
 #include <msp430.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <defines.h>
 
-#define NUM_ADC_CHANNELS 5
+/* We only need five channels, but the DTO samples them contiguously and the pin of
+ * channel 1 and 2 is occupied by other functions. */
+#define NUM_ADC_CHANNELS 7
 
 typedef enum
 {
-    // ADC10 stores the result in opposite order in the sample array
-    CHANNEL_SENSOR_LEFT = 4,
+    /* The ADC10 DTC writes the channel sample values in opposite order */
+    CHANNEL_SENSOR_LEFT = 6,
+    CHANNEL_UNUSED_0 = 5, /* Occupied by UART */
+    CHANNEL_UNUSED_1 = 4, /* Occupied by UART */
     CHANNEL_SENSOR_FRONT_LEFT = 3,
     CHANNEL_SENSOR_FRONT = 2,
     CHANNEL_SENSOR_FRONT_RIGHT = 1,
     CHANNEL_SENSOR_RIGHT = 0
 } channel_t;
 
-static volatile uint16_t samples[NUM_ADC_CHANNELS];
+static volatile uint16_t data_transfer_block[NUM_ADC_CHANNELS];
+static volatile uint16_t samples_buffer_left_sensor[3];
+static volatile uint16_t samples_buffer_front_left_sensor[3];
+static volatile uint16_t samples_buffer_front_sensor[3];
+static volatile uint16_t samples_buffer_front_right_sensor[3];
+static volatile uint16_t samples_buffer_right_sensor[3];
+static volatile uint16_t sample_idx = 0;
 static bool initialized = false;
+
+static uint16_t median_filter_3(uint16_t first, uint16_t second, uint16_t third)
+{
+    uint16_t middle;
+
+    if ((first <= second) && (first <= third))
+    {
+        middle = (second <= third) ? second : third;
+    }
+    else if ((second <= first) && (second <= third))
+    {
+        middle = (first <= third) ? first : third;
+    }
+    else
+    {
+        middle = (first <= second) ? first : second;
+    }
+    return middle;
+}
 
 void adc_init()
 {
     if (initialized) {
         return;
     }
-    // SREF_0: VCC (3.3v) and GND (0v) as reference
-    // ADC10SHT_2: sample and hold time for 16 x ADC10CLK
-    // ADC10ON: Enable ADC10
-    // MSC: Multi sample and convert, must set this to automatically sample each channel in CONSEQ_1
-    ADC10CTL0 = SREF_0 + ADC10SHT_2 + ADC10ON + MSC;
-    // INCH_4: Start with channel 4 and count downwards
-    // ADC10DIV_0: No division of selected clock source
-    // CONSEQ_1: Sample and convert sequence of channels once
-    // SHS_0: Trigger sampling with ADC10SC pin
-    // ADC10SSEL_0: ADC10OSC clock source
-    ADC10CTL1 = INCH_4 + ADC10DIV_0 + CONSEQ_1 + SHS_0 + ADC10SSEL_0;
-    // Enable sampling from p1.0, p1.1, ... p1.4
-    // TODO: Use values of GPIO_PIN() here instead,
+
+    /* Configure it to run of ACLK (~8-32 kHz, depends on unit). The exact speed doesn't matter,
+     * as long as we sample faster than ~40 ms, we should be fine, because that's the update rate
+     * of the range sensor. Moreover, we configure it to sample the channels and then trigger
+     * an interrupt, which let us push the values to a buffer before starting the sampling
+     * again. */
+    ADC10CTL0 = SREF_0 + ADC10SHT_3 + ADC10ON + MSC + ADC10IE;
+    ADC10CTL1 = INCH_6 + ADC10DIV_0 + CONSEQ_1 + SHS_0 + ADC10SSEL_1;
     ADC10AE0 = GPIO_PIN(GPIO_ADC_LEFT_SENSOR) +
                GPIO_PIN(GPIO_ADC_FRONT_LEFT_SENSOR) +
                GPIO_PIN(GPIO_ADC_FRONT_SENSOR) +
                GPIO_PIN(GPIO_ADC_FRONT_RIGHT_SENSOR) +
                GPIO_PIN(GPIO_ADC_RIGHT_SENSOR);
-    // Number of transfers per block
     ADC10DTC1 = NUM_ADC_CHANNELS;
-    // Continuous transfer
     ADC10DTC0 = ADC10CT;
-    // Set address to save samples to
-    ADC10SA = (uint16_t)samples;
+    ADC10SA = (uint16_t)data_transfer_block;
+    ADC10CTL0 |= ENC + ADC10SC;
     initialized = true;
 }
 
-void adc_read_channels(adc_channel_values_t* channel_values)
+void adc_isr(void) __attribute__ ((interrupt (ADC10_VECTOR)));
+void adc_isr(void)
 {
-    // Start sampling and conversion
+    ADC10CTL0 &= ~ENC;
+    sample_idx += 1;
+    if (sample_idx == ARRAY_SIZE(samples_buffer_left_sensor)) {
+        sample_idx = 0;
+    }
+
+    samples_buffer_left_sensor[sample_idx] = data_transfer_block[CHANNEL_SENSOR_LEFT];
+    samples_buffer_front_left_sensor[sample_idx] = data_transfer_block[CHANNEL_SENSOR_FRONT_LEFT];
+    samples_buffer_front_sensor[sample_idx] = data_transfer_block[CHANNEL_SENSOR_FRONT];
+    samples_buffer_front_right_sensor[sample_idx] = data_transfer_block[CHANNEL_SENSOR_FRONT_RIGHT];
+    samples_buffer_right_sensor[sample_idx] = data_transfer_block[CHANNEL_SENSOR_RIGHT];
+
     ADC10CTL0 |= ENC + ADC10SC;
-
-    // TODO: low power mode and wake on interrupt here instead.
-    // Wait for sampling and conversion to finish
-    while (ADC10CTL1 & ADC10BUSY);
-
-    channel_values->left_sensor = samples[CHANNEL_SENSOR_LEFT];
-    channel_values->front_left_sensor = samples[CHANNEL_SENSOR_FRONT_LEFT];
-    channel_values->front_sensor = samples[CHANNEL_SENSOR_FRONT];
-    channel_values->front_right_sensor = samples[CHANNEL_SENSOR_FRONT_RIGHT];
-    channel_values->right_sensor = samples[CHANNEL_SENSOR_RIGHT];
 }
 
+void adc_read(adc_channel_values_t* channel_values)
+{
+    /* Disable ADC interrupt while retrieving the values */
+    ADC10CTL0 &= ~ADC10IE;
+    /* Median filter the ADC values to remove spikes. This might also get better
+     * once we add a capacitor on the range sensor. */
+    channel_values->left_sensor = median_filter_3(samples_buffer_left_sensor[0],
+                                                  samples_buffer_left_sensor[1],
+                                                  samples_buffer_left_sensor[2]);
+    channel_values->front_left_sensor = median_filter_3(samples_buffer_front_left_sensor[0],
+                                                        samples_buffer_front_left_sensor[1],
+                                                        samples_buffer_front_left_sensor[2]);
+    channel_values->front_sensor = median_filter_3(samples_buffer_front_sensor[0],
+                                                   samples_buffer_front_sensor[1],
+                                                   samples_buffer_front_sensor[2]);
+    channel_values->front_right_sensor = median_filter_3(samples_buffer_front_right_sensor[0],
+                                                         samples_buffer_front_right_sensor[1],
+                                                         samples_buffer_front_right_sensor[2]);
+    channel_values->right_sensor = median_filter_3(samples_buffer_right_sensor[0],
+                                                   samples_buffer_right_sensor[1],
+                                                   samples_buffer_right_sensor[2]);
+    ADC10CTL0 |= ADC10IE;
+    ADC10CTL0 |= ENC + ADC10SC;
+}

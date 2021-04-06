@@ -5,6 +5,7 @@
 #include "line_detection.h"
 #include "time.h"
 #include "sleep.h"
+#include "trace.h"
 #else
 #include "NsumoController/nsumo/state_machine.h"
 #include "microcontroller_c_bindings.h"
@@ -12,9 +13,9 @@
 #include "NsumoController/nsumo/drive.h"
 #include "NsumoController/nsumo/line_detection.h"
 #include "NsumoController/nsumo/enemy_detection.h"
+#include "NsumoController/nsumo/trace.h"
 #endif
 
-#include <stdio.h>
 #include <stdbool.h>
 
 typedef enum state {
@@ -34,6 +35,35 @@ typedef enum {
     RETREAT_STATE_DRIVE_ARCTURN_LEFT,
     RETREAT_STATE_DRIVE_ARCTURN_RIGHT,
 } retreat_state_t;
+
+const char *main_state_str(main_state_t main_state)
+{
+    switch (main_state)
+    {
+    case MAIN_STATE_SEARCH_1: return "MAIN_STATE_SEARCH_1";
+    case MAIN_STATE_SEARCH_2: return "MAIN_STATE_SEARCH_2";
+    case MAIN_STATE_ATTACK: return "MAIN_STATE_ATTACK";
+    case MAIN_STATE_RETREAT: return "MAIN_STATE_RETREAT";
+    case MAIN_STATE_TEST: return "MAIN_STATE_TEST";
+    }
+    return "";
+}
+
+const char *retreat_state_str(retreat_state_t retreat_state)
+{
+    switch (retreat_state)
+    {
+    case RETREAT_STATE_NONE: return "RETREAT_STATE_NONE";
+    case RETREAT_STATE_DRIVE_REVERSE: return "RETREAT_STATE_DRIVE_REVERSE";
+    case RETREAT_STATE_DRIVE_FORWARD: return "RETREAT_STATE_DRIVE_FORWARD";
+    case RETREAT_STATE_DRIVE_ROTATE_LEFT: return "RETREAT_STATE_DRIVE_ROTATE_LEFT";
+    case RETREAT_STATE_DRIVE_ROTATE_RIGHT: return "RETREAT_STATE_DRIVE_ROTATE_RIGHT";
+    case RETREAT_STATE_DRIVE_ARCTURN_LEFT: return "RETREAT_STATE_DRIVE_ARCTURN_LEFT";
+    case RETREAT_STATE_DRIVE_ARCTURN_RIGHT: return "RETREAT_STATE_DRIVE_ARCTURN_RIGHT";
+    }
+    return "";
+}
+
 
 static const uint16_t retreat_state_timeouts[] =
 {
@@ -153,7 +183,6 @@ bool is_enemy_out(line_detection_t line_detection, enemy_detection_t enemy_detec
            (line_detection == LINE_DETECTION_FRONT);
 }
 
-/* TODO: Create shared tracing (different levels) function between MCU and simulation */
 /* TODO: Create functions to print the enum values */
 /* "Block" sleep here to make sure we get away from the line */
 /* TODO: We shouldn't block sleep here */
@@ -174,8 +203,8 @@ void state_machine_run()
          * don't need to gather variables over and over */
         /* TODO: Define all sleep constants as defines! */
         line_detection_t line_detection = line_detection_get();
-        printf("Line detect %d\n", line_detection);
         enemy_detection_t enemy_detection = enemy_detection_get();
+
         switch (current_state)
         {
         case MAIN_STATE_SEARCH_1:
@@ -205,7 +234,8 @@ void state_machine_run()
                 next_state = MAIN_STATE_RETREAT;
                 break;
             }
-            if (time_ms() - time_at_state_change > MAIN_STATE_SEARCH_2_TIME_MS) {
+            uint32_t time = time_ms();
+            if (time - time_at_state_change > MAIN_STATE_SEARCH_2_TIME_MS) {
                 next_state = MAIN_STATE_SEARCH_1;
                 break;
             }
@@ -226,7 +256,6 @@ void state_machine_run()
             /* TODO: Timeout..., we may be stuck in a head on battle... */
             break;
         case MAIN_STATE_RETREAT:
-            printf("RETREAT\n");
             next_state = state_machine_retreat_run();
             /* TODO: This is a bit dangerous, we may be going between retreat manuevers and never
              * getting to RETREAT_NONE, e.g. if we drive back and forth detecting line before
@@ -238,14 +267,17 @@ void state_machine_run()
             break;
         }
         if (is_enemy_out(line_detection, enemy_detection)) {
-            printf("Enemy out!\n");
+            trace("Enemy out!\n");
         }
 
         if (next_state != current_state) {
             time_at_state_change = time_ms();
             current_state = next_state;
+            trace("New state: %s\n", main_state_str(current_state));
         }
         /* Sleep a bit to offload the host CPU :) */
+#ifndef BUILD_MCU
         sleep_ms(1);
+#endif
     }
 }

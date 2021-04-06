@@ -95,6 +95,7 @@ static inline void ir_remote_reset()
     P1IES |= BIT5; // falling edge
 }
 
+/* TODO: Replace with GCC declaration */
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer_A(void) {
     if (time_total == T_MAX_USEC) {
@@ -113,6 +114,7 @@ __interrupt void Timer_A(void) {
 // TODO: How do I get the compiler to inline functions, I need compiler flag?
 
 // The IR sensors is high by default (when inactive)
+/* TODO: Replace with GCC declaration */
 #pragma vector=PORT1_VECTOR
 __interrupt void Port_1(void) {
     if (P1IFG & BIT5) {
