@@ -61,6 +61,7 @@ void pwm_set_duty_cycle(pwm_out_t pwm_out, uint16_t duty_cycle_percent)
     if (duty_cycle_percent > 0)
     {
         // TODO: Double check division for different pwm periods!
+        /* TODO: Fixed point */
         duty_cycle = duty_cycle_percent * (get_period() / 100) - 1;
     }
 

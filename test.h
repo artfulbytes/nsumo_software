@@ -1,7 +1,6 @@
 #ifndef TEST_H
 #define TEST_H
 
-/* Test program to dim the led up and down using pwm */
 void test_dimming_led(void);
 void test_leds(void);
 void test_run_motors(void);

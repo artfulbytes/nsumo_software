@@ -1,7 +1,7 @@
-#ifndef ir_remote__
-#define ir_remote__
+#ifndef IR_REMOTE_H
+#define IR_REMOTE_H
 
-// The buttons on the remote control
+/* Corresponds to the buttons on the remote */
 typedef enum {
     COMMAND_0,
     COMMAND_1,
@@ -23,7 +23,7 @@ typedef enum {
     COMMAND_NONE,
 } ir_remote_command_t;
 
-void ir_remote_init();
-ir_remote_command_t ir_remote_get_command();
+void ir_remote_init(void);
+ir_remote_command_t ir_remote_get_command(void);
 
-#endif //ir_remote__
+#endif /* IR_REMOTE_H */

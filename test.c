@@ -54,7 +54,7 @@ void test_range_sensors()
     }
 }
 
-#if 0
+
 void test_ir_receiver()
 {
     ir_remote_init();
@@ -68,6 +68,7 @@ void test_ir_receiver()
     }
 }
 
+#if 0
 void test_state_machine()
 {
     state_machine_init();

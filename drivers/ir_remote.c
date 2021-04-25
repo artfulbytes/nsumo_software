@@ -1,19 +1,19 @@
+#include "ir_remote.h"
+#include "gpio.h"
 #include <msp430.h>
 #include <stdint.h>
-#include "ir_remote.h"
 
-// NEC protocol
+/* NEC protocol */
 #define T_AGC_USEC 9000
 #define T_AFTER_AGC_USEC 4500
 #define T_LOGICAL_ONE_USEC 2250
 #define T_LOGICAL_ZERO_USEC 1125
 #define T_ERROR_MARGIN_USEC 250
 #define T_MAX_USEC 65000
-// 110 ms according to spec, but get ~108600 uS when measuring
+/* 110 ms according to spec, but get ~108600 uS when measuring */
 #define T_REPEATING_USEC 108600
 #define T_REPEATING_AFTER_AGC_USEC 2250
 
-// TODO: Larger than it has to be probably
 #define MSG_BUFFER_SIZE 20
 
 typedef enum {
@@ -26,10 +26,8 @@ typedef enum {
 
 static volatile uint32_t msg_buffer[MSG_BUFFER_SIZE] = {0};
 static volatile uint16_t msg_buffer_head = 0;
-static volatile unsigned int msg_buffer_tail = 0;
-
-// TODO: Do they need to be volatile?
-static volatile unsigned int bitcounter = 0;
+static volatile uint16_t msg_buffer_tail = 0;
+static volatile uint16_t bit_counter = 0;
 static volatile uint32_t message = 0;
 static volatile uint32_t time_total = 0;
 static volatile uint32_t time_passed = 0;
@@ -37,7 +35,6 @@ static volatile uint32_t time_last_interrupt = 0;
 static volatile uint16_t repeating = 0;
 static volatile ir_state_t ir_state = STATE_INACTIVE;
 
-// TODO: Can and should use 16-bit here instead
 static ir_remote_command_t msg_to_cmd(uint32_t msg)
 {
     switch(msg)
@@ -63,13 +60,10 @@ static ir_remote_command_t msg_to_cmd(uint32_t msg)
     return COMMAND_NONE;
 }
 
-// Add any message (even invalid ones)
-// We check validity in get function.
 static inline void ir_remote_msg_buffer_add(uint32_t msg)
 {
     msg_buffer[msg_buffer_head++] = msg;
     if (msg_buffer_head >= MSG_BUFFER_SIZE) {
-        // Avoid slow modulo on MSP430 in interrupt context (no native support)
         msg_buffer_head = 0;
     }
     if (msg_buffer_head == msg_buffer_tail) {
@@ -82,165 +76,128 @@ static inline void ir_remote_msg_buffer_add(uint32_t msg)
 
 static inline void ir_remote_reset()
 {
-    // TODO: Is this how to correctly stop the timer?
-    //       We might just need TACLR, since it also clears MC
     TACTL = MC_0 + TACLR;
     ir_state = STATE_INACTIVE;
-    bitcounter = 0;
+    bit_counter = 0;
     time_total = 0;
     time_last_interrupt = 0;
     time_passed = 0;
     repeating = 0;
     message = 0;
-    P1IES |= BIT5; // falling edge
+    gpio_set_interrupt_trigger(GPIO_IR_REMOTE, TRIGGER_FALLING);
 }
 
-/* TODO: Replace with GCC declaration */
-#pragma vector=TIMER0_A0_VECTOR
-__interrupt void Timer_A(void) {
+void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) Timer_A (void) {
     if (time_total == T_MAX_USEC) {
-        // Timeout -> reset and stop
+        /* Timeout */
         ir_remote_reset();
     } else {
         time_total += T_MAX_USEC;
     }
 }
 
-// TODO: What if both interrupts happen simultaneously?
-// TODO: Verify with inverted bits??
-// TODO: Just get flank and then do side processing somewhere else?
-// TODO: Measure time from start to finish inside this function
-//       (Quick test, 20-120 uS, so below one millisecond, negligble I think)
-// TODO: How do I get the compiler to inline functions, I need compiler flag?
-
-// The IR sensors is high by default (when inactive)
-/* TODO: Replace with GCC declaration */
-#pragma vector=PORT1_VECTOR
-__interrupt void Port_1(void) {
-    if (P1IFG & BIT5) {
-        // TODO: According to the DATASHEET, the timer should be stopped while reading timer register!)
-        time_passed = (time_total + TA0R) - time_last_interrupt;
-        time_last_interrupt = (time_total + TA0R);
-        P1IE &= ~BIT5; // Disable interrupt while processing
-        if ((bitcounter == 32) && (ir_state == STATE_RECEIVING_BITS || ir_state == STATE_REPEATING)) {
-            // We only get to here if the user keeps a key pressed
-            if (time_last_interrupt > (T_REPEATING_USEC-T_ERROR_MARGIN_USEC)) { // TODO: set upper limit too?
-                repeating += 1;
-                if (repeating > 19) {  // TODO: Should it be repeating one here? shouldn't that be the next pulse?
-                    repeating = repeating;
-                }
-                ir_remote_msg_buffer_add(message);
-                time_total = 0;
-                time_last_interrupt = 0;
-                time_passed = 0;
-                ir_state = STATE_REPEATING; // TODO: Don't really need this state (can use inactive instead), but maybe good for readability?
-            } else {
-                if (ir_state == STATE_RECEIVING_BITS) {
-                    ir_remote_reset();
-                }
-                else {
-                    // Might be the start of a normal message
-                    // TODO: Check if this is actually handled correctly, might need to
-                    //       reset message, timer etc...
-                }
-            }
-        }
-
-        switch (ir_state) {
-        case STATE_INACTIVE:
-        case STATE_REPEATING:
-            TACTL |= TACLR;
-            TACTL = TASSEL_2 + MC_1; // SMCLK, up mode
+/* This ISR is kind of large and we could just collect the flanks here and
+ * do the processing inside the main loop. But it's not that bad (~20-120 uS)
+ * and the remote controlling is just for testing, so leave it as is for now. */
+static void ir_remote_isr() {
+    /* TODO: We should stop the timer while reading TA0R (see datasheet) */
+    time_passed = (time_total + TA0R) - time_last_interrupt;
+    time_last_interrupt = (time_total + TA0R);
+    if ((bit_counter == 32) && (ir_state == STATE_RECEIVING_BITS || ir_state == STATE_REPEATING)) {
+        /* We only get to here if the user keeps a key pressed */
+        /* TODO: set upper limit too? */
+        if (time_last_interrupt > (T_REPEATING_USEC - T_ERROR_MARGIN_USEC)) {
+            repeating += 1;
+            ir_remote_msg_buffer_add(message);
             time_total = 0;
-            P1IES &= ~BIT5; // rising edge
-            ir_state = STATE_AGC;
-            break;
-        case STATE_AGC:
-            if (time_passed > (T_AGC_USEC - T_ERROR_MARGIN_USEC))
-            {
-                // AGC received
-                // Next we expect a fall in ~4.5 ms
-                P1IES |= BIT5;
-                ir_state = STATE_AFTER_AGC;
-            } else {
+            time_last_interrupt = 0;
+            time_passed = 0;
+            ir_state = STATE_REPEATING;
+        } else {
+            if (ir_state == STATE_RECEIVING_BITS) {
                 ir_remote_reset();
-            }
-            break;
-        case STATE_AFTER_AGC:
-            // Fall after ~4.5ms
-            if (time_passed > (T_AFTER_AGC_USEC - T_ERROR_MARGIN_USEC)) {
-                ir_state = STATE_RECEIVING_BITS;
-                // WE expect a rising edge after ~0.6ms
-                // P1IES &= ~BIT5; // rising edge
-                // But we want to look for the falling edge and measure that time to determine 0 or 1
-                P1IES |= BIT5;
-            } else if (repeating && (time_passed > (T_REPEATING_AFTER_AGC_USEC - T_ERROR_MARGIN_USEC))) {
-                ir_state = STATE_REPEATING;
-                P1IES |= BIT5;
             } else {
-                ir_remote_reset();
+                /* TODO: How to handle? */
             }
-            break;
-        case STATE_RECEIVING_BITS:
-            if ((time_passed > (T_LOGICAL_ZERO_USEC - T_ERROR_MARGIN_USEC)) && (time_passed < (T_LOGICAL_ZERO_USEC + T_ERROR_MARGIN_USEC))) {
-                // A zero
-                bitcounter++;
-                message <<= 1;
-
-            } else if ((time_passed > (T_LOGICAL_ONE_USEC - T_ERROR_MARGIN_USEC)) && (time_passed < (T_LOGICAL_ONE_USEC + T_ERROR_MARGIN_USEC))) {
-                // A one
-                bitcounter++;
-                message <<= 1;
-                message |= 0x1;
-            } else {
-                ir_remote_reset();
-            }
-            if (bitcounter == 16) {
-                bitcounter = 16;
-            }
-            if (bitcounter == 32) {
-                bitcounter = 32;
-                ir_remote_msg_buffer_add(message);
-            }
-            break;
         }
+    }
 
-        P1IFG &= ~BIT5; // Clear
-        P1IE |= BIT5; // Enable again
+    switch (ir_state) {
+    case STATE_INACTIVE:
+    case STATE_REPEATING:
+        TACTL |= TACLR;
+        TACTL = TASSEL_2 + MC_1;
+        time_total = 0;
+        gpio_set_interrupt_trigger(GPIO_IR_REMOTE, TRIGGER_RISING);
+        ir_state = STATE_AGC;
+        break;
+    case STATE_AGC:
+        if (time_passed > (T_AGC_USEC - T_ERROR_MARGIN_USEC)) {
+            /* We received AGC, so next we next we expect a fall in ~4.5 ms */
+            gpio_set_interrupt_trigger(GPIO_IR_REMOTE, TRIGGER_FALLING);
+            ir_state = STATE_AFTER_AGC;
+        } else {
+            /* Unexpected, reset */
+            ir_remote_reset();
+        }
+        break;
+    case STATE_AFTER_AGC:
+        if (time_passed > (T_AFTER_AGC_USEC - T_ERROR_MARGIN_USEC)) {
+            ir_state = STATE_RECEIVING_BITS;
+            /* Look for the falling edge and then measure the time to determine 0 or 1 */
+            gpio_set_interrupt_trigger(GPIO_IR_REMOTE, TRIGGER_FALLING);
+        } else if (repeating && (time_passed > (T_REPEATING_AFTER_AGC_USEC - T_ERROR_MARGIN_USEC))) {
+            ir_state = STATE_REPEATING;
+            gpio_set_interrupt_trigger(GPIO_IR_REMOTE, TRIGGER_FALLING);
+        } else {
+            /* Unexpected, reset */
+            ir_remote_reset();
+        }
+        break;
+    case STATE_RECEIVING_BITS:
+        if ((time_passed > (T_LOGICAL_ZERO_USEC - T_ERROR_MARGIN_USEC)) && (time_passed < (T_LOGICAL_ZERO_USEC + T_ERROR_MARGIN_USEC))) {
+            /* We got a 0 */
+            bit_counter++;
+            message <<= 1;
+        } else if ((time_passed > (T_LOGICAL_ONE_USEC - T_ERROR_MARGIN_USEC)) && (time_passed < (T_LOGICAL_ONE_USEC + T_ERROR_MARGIN_USEC))) {
+            /* We got a 1 */
+            bit_counter++;
+            message <<= 1;
+            message |= 0x1;
+        } else {
+            /* Unexpected, rest */
+            ir_remote_reset();
+        }
+        if (bit_counter == 32) {
+            /* We got all bits */
+            ir_remote_msg_buffer_add(message);
+        }
+        break;
     }
 }
 
-// TODO: Change BIT5 to GPIO name
 void ir_remote_init()
 {
-    P1REN |= BIT5;
-    P1OUT |= BIT5;
-    P1IE |= BIT5; // P1.1 interrupt enabled
-    P1IES |= BIT5; // P1.1 high/low edge
-    P1IFG &= ~BIT5; // P1.1 IFG cleared
+    gpio_enable_interrupt(GPIO_IR_REMOTE);
+    gpio_set_interrupt_trigger(GPIO_IR_REMOTE, TRIGGER_FALLING);
+    gpio_register_isr(GPIO_IR_REMOTE, ir_remote_isr);
 
-    TACCTL0 = CCIE;  // TACCR0 interrupt enabled
-    TACTL = TASSEL_2 + MC_1; // SMCLK, up mode
-    TACCR0 = 65000; // interrupt after 65ms
+    TACCTL0 = CCIE;  /* TACCR0 interrupt enabled */
+    TACTL = TASSEL_2 + MC_1; /* SMCLK, up mode */
+    TACCR0 = T_MAX_USEC; /* Interrupt after 65 us */
 }
 
 ir_remote_command_t ir_remote_get_command()
 {
-    // For now disable interrupts while getting messages
-    // This can possibly cause missed flanks and in turn IR messages
-    // TODO: Investigate alternative solution to disabling interrupts
-    P1IE &= ~BIT5;
+    gpio_disable_interrupt(GPIO_IR_REMOTE);
     ir_remote_command_t command = COMMAND_NONE;
     if (msg_buffer_head != msg_buffer_tail) {
-        // buffer not empty
         command = msg_to_cmd(msg_buffer[msg_buffer_tail]);
         msg_buffer_tail += 1;
         if (msg_buffer_tail >= MSG_BUFFER_SIZE) {
             msg_buffer_tail = 0;
         }
-
     }
-
-    P1IE |= BIT5;
+    gpio_enable_interrupt(GPIO_IR_REMOTE);
     return command;
 }
