@@ -3,7 +3,10 @@
 
 #include <stdarg.h>
 
-/* Should be used for printing, because we really don't want to
+#define TRACE_INFO(fmt, ...) trace("INFO: %s: " fmt "\n", __FUNCTION__, ##__VA_ARGS__)
+#define TRACE_WARN(fmt, ...) trace("WARNING: %s: " fmt "\n", __FUNCTION__, ##__VA_ARGS__)
+
+/* This should be used for printing, because we really don't want to
  * include stdio.h functions when build for the MCU, adds ~5kB and ROM is
  * only 16KB on MSP430G2553. */
 

@@ -6,6 +6,7 @@
 #include "time.h"
 #include "sleep.h"
 #include "trace.h"
+#include "ir_remote.h"
 #else
 #include "NsumoController/nsumo/state_machine.h"
 #include "microcontroller_c_bindings.h"
@@ -63,7 +64,6 @@ const char *retreat_state_str(retreat_state_t retreat_state)
     }
     return "";
 }
-
 
 static const uint16_t retreat_state_timeouts[] =
 {
@@ -170,11 +170,115 @@ static main_state_t state_machine_retreat_run()
     return MAIN_STATE_SEARCH_1;
 }
 
+typedef enum {
+    TEST_STATE_NONE,
+    TEST_STATE_DRIVE_REVERSE,
+    TEST_STATE_DRIVE_FORWARD,
+    TEST_STATE_DRIVE_ROTATE_LEFT,
+    TEST_STATE_DRIVE_ROTATE_RIGHT,
+} test_state_t;
+
+
+const char *test_state_str(test_state_t test_state)
+{
+    switch (test_state)
+    {
+    case TEST_STATE_NONE: return "TEST_STATE_NONE";
+    case TEST_STATE_DRIVE_REVERSE: return "TEST_STATE_DRIVE_REVERSE";
+    case TEST_STATE_DRIVE_FORWARD: return "TEST_STATE_DRIVE_FORWARD";
+    case TEST_STATE_DRIVE_ROTATE_LEFT: return "TEST_STATE_DRIVE_ROTATE_LEFT";
+    case TEST_STATE_DRIVE_ROTATE_RIGHT: return "TEST_STATE_DRIVE_ROTATE_RIGHT";
+    }
+    return "";
+}
+
+/* TODO: Move to new file? */
+static test_state_t current_test_state = TEST_STATE_NONE;
+
+static void handle_test_state(test_state_t test_state)
+{
+    switch (test_state) {
+    case TEST_STATE_NONE:
+        TRACE_WARN("Test state is none");
+        break;
+    case TEST_STATE_DRIVE_REVERSE:
+        drive_set(DRIVE_REVERSE, DRIVE_SPEED_FASTEST);
+        break;
+    case TEST_STATE_DRIVE_FORWARD:
+        drive_set(DRIVE_FORWARD, DRIVE_SPEED_FASTEST);
+        break;
+    case TEST_STATE_DRIVE_ROTATE_LEFT:
+        drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_FASTEST);
+        break;
+    case TEST_STATE_DRIVE_ROTATE_RIGHT:
+        drive_set(DRIVE_ROTATE_RIGHT, DRIVE_SPEED_FASTEST);
+        break;
+    }
+}
+
+static main_state_t state_machine_test_run(ir_remote_command_t remote_command)
+{
+    test_state_t next_test_state = current_test_state;
+
+    switch (remote_command) {
+    case COMMAND_HASH:
+        next_test_state = TEST_STATE_NONE;
+        break;
+    case COMMAND_UP:
+        next_test_state = TEST_STATE_DRIVE_FORWARD;
+        break;
+    case COMMAND_DOWN:
+        next_test_state = TEST_STATE_DRIVE_REVERSE;
+        break;
+    case COMMAND_LEFT:
+        next_test_state = TEST_STATE_DRIVE_ROTATE_LEFT;
+        break;
+    case COMMAND_RIGHT:
+        next_test_state = TEST_STATE_DRIVE_ROTATE_RIGHT;
+        break;
+    case COMMAND_0:
+    case COMMAND_1:
+    case COMMAND_2:
+    case COMMAND_3:
+    case COMMAND_4:
+    case COMMAND_5:
+    case COMMAND_6:
+    case COMMAND_7:
+    case COMMAND_8:
+    case COMMAND_9:
+    case COMMAND_STAR:
+    case COMMAND_OK:
+        TRACE_WARN("Command not implemented");
+        break;
+    case COMMAND_NONE:
+        break;
+    }
+
+    if (next_test_state != current_test_state) {
+        drive_stop();
+        current_test_state = next_test_state;
+        TRACE_INFO("New test state: %s", test_state_str(current_test_state));
+    }
+
+    if (current_test_state != TEST_STATE_NONE) {
+        handle_test_state(current_test_state);
+    } else {
+        /* Leave the test state machine */
+        drive_stop();
+        return MAIN_STATE_SEARCH_1;
+    }
+
+
+    return MAIN_STATE_TEST;
+}
+
 static void init()
 {
     /* TODO: Init time here? */
     enemy_detection_init();
     line_detection_init();
+    ir_remote_init();
+    drive_init();
 }
 
 bool is_enemy_out(line_detection_t line_detection, enemy_detection_t enemy_detection)
@@ -204,6 +308,11 @@ void state_machine_run()
         /* TODO: Define all sleep constants as defines! */
         line_detection_t line_detection = line_detection_get();
         enemy_detection_t enemy_detection = enemy_detection_get();
+        ir_remote_command_t remote_command = ir_remote_get_command();
+        if (remote_command != COMMAND_NONE) {
+            drive_stop();
+            current_state = next_state = MAIN_STATE_TEST;
+        }
 
         switch (current_state)
         {
@@ -218,7 +327,7 @@ void state_machine_run()
                 next_state = MAIN_STATE_SEARCH_2;
                 break;
             }
-            drive_set(DRIVE_ROTATE_RIGHT, DRIVE_SPEED_SLOW);
+            //drive_set(DRIVE_ROTATE_RIGHT, DRIVE_SPEED_SLOW);
 
             break;
         case MAIN_STATE_SEARCH_2: /* Drive around to find the enemy */
@@ -228,7 +337,7 @@ void state_machine_run()
                 break;
             }
             if (line_detection == LINE_DETECTION_NONE) {
-                drive_set(DRIVE_FORWARD, DRIVE_SPEED_FASTEST);
+                //drive_set(DRIVE_FORWARD, DRIVE_SPEED_FASTEST);
             } else {
                 drive_stop();
                 next_state = MAIN_STATE_RETREAT;
@@ -248,7 +357,7 @@ void state_machine_run()
                 break;
             }
             if (enemy_detection & ENEMY_DETECTION_FRONT) {
-                drive_set(DRIVE_FORWARD, DRIVE_SPEED_FASTEST);
+                //drive_set(DRIVE_FORWARD, DRIVE_SPEED_FASTEST);
             } else {
                 drive_stop();
                 next_state = MAIN_STATE_SEARCH_1;
@@ -264,12 +373,12 @@ void state_machine_run()
              * see any back<->forth detection that happens under 200ms as line being to left/right...*/
             /* TODO:Should handle having an enemy and a line detected... */
         case MAIN_STATE_TEST:
+            next_state = state_machine_test_run(remote_command);
             break;
         }
         if (is_enemy_out(line_detection, enemy_detection)) {
             trace("Enemy out!\n");
         }
-
         if (next_state != current_state) {
             time_at_state_change = time_ms();
             current_state = next_state;

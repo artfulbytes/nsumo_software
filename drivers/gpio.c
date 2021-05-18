@@ -67,7 +67,7 @@ static const gpio_config_t gpio_initial_config[] =
     {GPIO_IR_REMOTE, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
 };
 
-static isr_function isr_functions[GPIO_PORT_CNT][GPIO_PIN_CNT_PER_PORT] =
+static volatile isr_function isr_functions[GPIO_PORT_CNT][GPIO_PIN_CNT_PER_PORT] =
 {
     [GPIO_PORT_1] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
     [GPIO_PORT_2] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
@@ -80,6 +80,9 @@ static inline void gpio_clear_interrupt(gpio_t gpio)
 
 void gpio_init()
 {
+    *port_interrupt_enable_registers[GPIO_PORT_1] &= 0;
+    *port_interrupt_enable_registers[GPIO_PORT_2] &= 0;
+
     int cfg_idx;
     for (cfg_idx = 0; cfg_idx < ARRAY_SIZE(gpio_initial_config); cfg_idx++) {
         gpio_configure(&gpio_initial_config[cfg_idx]);
@@ -133,7 +136,6 @@ void gpio_set_resistor(gpio_t gpio, gpio_resistor_t resistor)
     }
 }
 
-/* TODO: Use << instead of * 2 */
 void gpio_set_selection(gpio_t gpio, gpio_selection_t selection)
 {
     switch (selection)
@@ -154,103 +156,109 @@ void gpio_set_selection(gpio_t gpio, gpio_selection_t selection)
     }
 }
 
+/* On the MSP430 the P1IFG bits are set when a flank occurs even if the
+ * corresponding bit in P1IE is disabled. Disabling P1IE only prevents it
+ * from triggering an interrupt. */
 void __attribute__ ((interrupt(PORT1_VECTOR))) Port_1 (void) {
     if (P1IFG & GPIO_PIN(GPIO_10)) {
-        if (isr_functions[GPIO_PORT(GPIO_10)][GPIO_PIN(GPIO_10)]) {
-            isr_functions[GPIO_PORT(GPIO_10)][GPIO_PIN(GPIO_10)]();
+        if (isr_functions[GPIO_PORT(GPIO_10)][GPIO_PIN_IDX(GPIO_10)]) {
+            isr_functions[GPIO_PORT(GPIO_10)][GPIO_PIN_IDX(GPIO_10)]();
         }
         gpio_clear_interrupt(GPIO_10);
     }
     if (P1IFG & GPIO_PIN(GPIO_11)) {
-        if (isr_functions[GPIO_PORT(GPIO_11)][GPIO_PIN(GPIO_11)]) {
-            isr_functions[GPIO_PORT(GPIO_11)][GPIO_PIN(GPIO_11)]();
+        if (isr_functions[GPIO_PORT(GPIO_11)][GPIO_PIN_IDX(GPIO_11)]) {
+            isr_functions[GPIO_PORT(GPIO_11)][GPIO_PIN_IDX(GPIO_11)]();
         }
         gpio_clear_interrupt(GPIO_11);
     }
     if (P1IFG & GPIO_PIN(GPIO_12)) {
-        if (isr_functions[GPIO_PORT(GPIO_12)][GPIO_PIN(GPIO_12)]) {
-            isr_functions[GPIO_PORT(GPIO_12)][GPIO_PIN(GPIO_12)]();
+        if (isr_functions[GPIO_PORT(GPIO_12)][GPIO_PIN_IDX(GPIO_12)]) {
+            isr_functions[GPIO_PORT(GPIO_12)][GPIO_PIN_IDX(GPIO_12)]();
         }
         gpio_clear_interrupt(GPIO_12);
     }
     if (P1IFG & GPIO_PIN(GPIO_13)) {
-        if (isr_functions[GPIO_PORT(GPIO_13)][GPIO_PIN(GPIO_13)]) {
-            isr_functions[GPIO_PORT(GPIO_13)][GPIO_PIN(GPIO_13)]();
+        if (isr_functions[GPIO_PORT(GPIO_13)][GPIO_PIN_IDX(GPIO_13)]) {
+            isr_functions[GPIO_PORT(GPIO_13)][GPIO_PIN_IDX(GPIO_13)]();
         }
         gpio_clear_interrupt(GPIO_13);
     }
     if (P1IFG & GPIO_PIN(GPIO_14)) {
-        if (isr_functions[GPIO_PORT(GPIO_14)][GPIO_PIN(GPIO_14)]) {
-            isr_functions[GPIO_PORT(GPIO_14)][GPIO_PIN(GPIO_14)]();
+        if (isr_functions[GPIO_PORT(GPIO_14)][GPIO_PIN_IDX(GPIO_14)]) {
+            isr_functions[GPIO_PORT(GPIO_14)][GPIO_PIN_IDX(GPIO_14)]();
         }
         gpio_clear_interrupt(GPIO_14);
     }
     if (P1IFG & GPIO_PIN(GPIO_15)) {
-        if (isr_functions[GPIO_PORT(GPIO_15)][GPIO_PIN(GPIO_15)]) {
-            isr_functions[GPIO_PORT(GPIO_15)][GPIO_PIN(GPIO_15)]();
+        if (isr_functions[GPIO_PORT(GPIO_15)][GPIO_PIN_IDX(GPIO_15)]) {
+            isr_functions[GPIO_PORT(GPIO_15)][GPIO_PIN_IDX(GPIO_15)]();
         }
         gpio_clear_interrupt(GPIO_15);
     }
     if (P1IFG & GPIO_PIN(GPIO_16)) {
-        if (isr_functions[GPIO_PORT(GPIO_16)][GPIO_PIN(GPIO_16)]) {
-            isr_functions[GPIO_PORT(GPIO_16)][GPIO_PIN(GPIO_16)]();
+        if (isr_functions[GPIO_PORT(GPIO_16)][GPIO_PIN_IDX(GPIO_16)]) {
+            isr_functions[GPIO_PORT(GPIO_16)][GPIO_PIN_IDX(GPIO_16)]();
         }
         gpio_clear_interrupt(GPIO_16);
     }
     if (P1IFG & GPIO_PIN(GPIO_17)) {
-        if (isr_functions[GPIO_PORT(GPIO_17)][GPIO_PIN(GPIO_17)]) {
-            isr_functions[GPIO_PORT(GPIO_17)][GPIO_PIN(GPIO_17)]();
+        if (isr_functions[GPIO_PORT(GPIO_17)][GPIO_PIN_IDX(GPIO_17)]) {
+            isr_functions[GPIO_PORT(GPIO_17)][GPIO_PIN_IDX(GPIO_17)]();
         }
         gpio_clear_interrupt(GPIO_17);
     }
 }
 
+/* On the MSP430 the P2IFG bits are set when a flank occurs even if the
+ * corresponding bit in P2IE is disabled. Disabling the bit in P2IE only
+ * prevents it from triggering an interrupt. */
 void __attribute__ ((interrupt(PORT2_VECTOR))) Port_2 (void) {
     if (P2IFG & GPIO_PIN(GPIO_20)) {
-        if (isr_functions[GPIO_PORT(GPIO_20)][GPIO_PIN(GPIO_20)]) {
-            isr_functions[GPIO_PORT(GPIO_20)][GPIO_PIN(GPIO_20)]();
+        if (isr_functions[GPIO_PORT(GPIO_20)][GPIO_PIN_IDX(GPIO_20)]) {
+            isr_functions[GPIO_PORT(GPIO_20)][GPIO_PIN_IDX(GPIO_20)]();
         }
         gpio_clear_interrupt(GPIO_20);
     }
     if (P2IFG & GPIO_PIN(GPIO_21)) {
-        if (isr_functions[GPIO_PORT(GPIO_21)][GPIO_PIN(GPIO_21)]) {
-            isr_functions[GPIO_PORT(GPIO_21)][GPIO_PIN(GPIO_21)]();
+        if (isr_functions[GPIO_PORT(GPIO_21)][GPIO_PIN_IDX(GPIO_21)]) {
+            isr_functions[GPIO_PORT(GPIO_21)][GPIO_PIN_IDX(GPIO_21)]();
         }
         gpio_clear_interrupt(GPIO_21);
     }
     if (P2IFG & GPIO_PIN(GPIO_22)) {
-        if (isr_functions[GPIO_PORT(GPIO_22)][GPIO_PIN(GPIO_22)]) {
-            isr_functions[GPIO_PORT(GPIO_22)][GPIO_PIN(GPIO_22)]();
+        if (isr_functions[GPIO_PORT(GPIO_22)][GPIO_PIN_IDX(GPIO_22)]) {
+            isr_functions[GPIO_PORT(GPIO_22)][GPIO_PIN_IDX(GPIO_22)]();
         }
         gpio_clear_interrupt(GPIO_22);
     }
     if (P2IFG & GPIO_PIN(GPIO_23)) {
-        if (isr_functions[GPIO_PORT(GPIO_23)][GPIO_PIN(GPIO_23)]) {
-            isr_functions[GPIO_PORT(GPIO_23)][GPIO_PIN(GPIO_23)]();
+        if (isr_functions[GPIO_PORT(GPIO_23)][GPIO_PIN_IDX(GPIO_23)]) {
+            isr_functions[GPIO_PORT(GPIO_23)][GPIO_PIN_IDX(GPIO_23)]();
         }
         gpio_clear_interrupt(GPIO_23);
     }
     if (P2IFG & GPIO_PIN(GPIO_24)) {
-        if (isr_functions[GPIO_PORT(GPIO_24)][GPIO_PIN(GPIO_24)]) {
-            isr_functions[GPIO_PORT(GPIO_24)][GPIO_PIN(GPIO_24)]();
+        if (isr_functions[GPIO_PORT(GPIO_24)][GPIO_PIN_IDX(GPIO_24)]) {
+            isr_functions[GPIO_PORT(GPIO_24)][GPIO_PIN_IDX(GPIO_24)]();
         }
         gpio_clear_interrupt(GPIO_24);
     }
     if (P2IFG & GPIO_PIN(GPIO_25)) {
-        if (isr_functions[GPIO_PORT(GPIO_25)][GPIO_PIN(GPIO_25)]) {
-            isr_functions[GPIO_PORT(GPIO_25)][GPIO_PIN(GPIO_25)]();
+        if (isr_functions[GPIO_PORT(GPIO_25)][GPIO_PIN_IDX(GPIO_25)]) {
+            isr_functions[GPIO_PORT(GPIO_25)][GPIO_PIN_IDX(GPIO_25)]();
         }
         gpio_clear_interrupt(GPIO_25);
     }
     if (P2IFG & GPIO_PIN(GPIO_26)) {
-        if (isr_functions[GPIO_PORT(GPIO_26)][GPIO_PIN(GPIO_26)]) {
-            isr_functions[GPIO_PORT(GPIO_26)][GPIO_PIN(GPIO_26)]();
+        if (isr_functions[GPIO_PORT(GPIO_26)][GPIO_PIN_IDX(GPIO_26)]) {
+            isr_functions[GPIO_PORT(GPIO_26)][GPIO_PIN_IDX(GPIO_26)]();
         }
         gpio_clear_interrupt(GPIO_26);
     }
     if (P2IFG & GPIO_PIN(GPIO_27)) {
-        if (isr_functions[GPIO_PORT(GPIO_27)][GPIO_PIN(GPIO_27)]) {
-            isr_functions[GPIO_PORT(GPIO_27)][GPIO_PIN(GPIO_27)]();
+        if (isr_functions[GPIO_PORT(GPIO_27)][GPIO_PIN_IDX(GPIO_27)]) {
+            isr_functions[GPIO_PORT(GPIO_27)][GPIO_PIN_IDX(GPIO_27)]();
         }
         gpio_clear_interrupt(GPIO_27);
     }
@@ -258,12 +266,13 @@ void __attribute__ ((interrupt(PORT2_VECTOR))) Port_2 (void) {
 
 void gpio_register_isr(gpio_t gpio, isr_function isr)
 {
-    isr_functions[GPIO_PORT(gpio)][GPIO_PIN(gpio)] = isr;
+    isr_functions[GPIO_PORT(gpio)][GPIO_PIN_IDX(gpio)] = isr;
 }
 
 void gpio_enable_interrupt(gpio_t gpio)
 {
-    *port_interrupt_enable_registers[GPIO_PORT(gpio)] |= GPIO_PIN(gpio);
+    volatile uint16_t pin_idx = GPIO_PIN(gpio);
+    *port_interrupt_enable_registers[GPIO_PORT(gpio)] |= pin_idx;
 }
 
 void gpio_disable_interrupt(gpio_t gpio)
