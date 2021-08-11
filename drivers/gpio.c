@@ -7,17 +7,20 @@
 static volatile uint8_t* port_dir_registers[] =
 {
     &P1DIR,
-    &P2DIR
+    &P2DIR,
+    &P3DIR
 };
 static volatile uint8_t* port_ren_registers[] =
 {
     &P1REN,
-    &P2REN
+    &P2REN,
+    &P3REN
 };
 static volatile uint8_t* port_out_registers[] =
 {
     &P1OUT,
-    &P2OUT
+    &P2OUT,
+    &P3OUT
 };
 
 static volatile uint8_t* port_sel_registers[] =
@@ -25,52 +28,70 @@ static volatile uint8_t* port_sel_registers[] =
     &P1SEL,
     &P1SEL2,
     &P2SEL,
-    &P2SEL2
+    &P2SEL2,
+    &P3SEL,
+    &P3SEL2
 };
 
 static volatile uint8_t* port_interrupt_flag_registers[] =
 {
     &P1IFG,
     &P2IFG
+    /* Port 3 is not interrupt capable on MSP430G2553 */
 };
 
 static volatile uint8_t* port_interrupt_enable_registers[] =
 {
     &P1IE,
     &P2IE
+    /* Port 3 is not interrupt capable on MSP430G2553 */
 };
 
 static volatile uint8_t* port_edge_select_registers[] =
 {
     &P1IES,
     &P2IES
+    /* Port 3 is not interrupt capable on MSP430G2553 */
 };
 
+// TODO: What about resistors??? and select (gpio, 1, 2, 3 makes sense?)?
+// TODO: SHould default config already set the correct one? Becomes a bit double then...
 static const gpio_config_t gpio_initial_config[] =
 {
-    {GPIO_ADC_LEFT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_1},
+    {GPIO_IR_REMOTE, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
     {GPIO_UART_RXD, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_3},
     {GPIO_UART_TXD, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_3},
-    {GPIO_ADC_FRONT_LEFT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_1},
-    {GPIO_ADC_FRONT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_1},
-    {GPIO_ADC_FRONT_RIGHT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_1},
-    {GPIO_ADC_RIGHT_SENSOR, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_1},
-    {GPIO_P17, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_P13_UNUSED, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_P14_UNUSED, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_XSHUT_RIGHT, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_I2C_SCL, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_3},
+    {GPIO_I2C_SDA, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_3},
 
+    {GPIO_RANGE_SENSOR_FRONT_INT, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_XSHUT_FRONT, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_XSHUT_FRONT_LEFT, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_LINE_DETECT_BACK_LEFT, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
     {GPIO_MOTORS_LEFT_CC_1, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_PWM_0, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
     {GPIO_MOTORS_LEFT_CC_2, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_MOTORS_RIGHT_CC_1, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_PWM_1, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_P26_UNUSED, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
     {GPIO_MOTORS_RIGHT_CC_2, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_P26, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_IR_REMOTE, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+
+    {GPIO_XSHUT_FRONT_RIGHT, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_LINE_DETECT_FRONT_RIGHT, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_LINE_DETECT_FRONT_LEFT, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_XSHUT_LEFT, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_LINE_DETECT_BACK_RIGHT, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+// TODO: Fix the default of these
+    {GPIO_PWM_MOTORS_LEFT, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_PWM_MOTORS_RIGHT, GPIO_OUTPUT, GPIO_HIGH, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_MOTORS_RIGHT_CC_1, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
 };
 
 static volatile isr_function isr_functions[GPIO_PORT_CNT][GPIO_PIN_CNT_PER_PORT] =
 {
     [GPIO_PORT_1] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
-    [GPIO_PORT_2] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+    [GPIO_PORT_2] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+    [GPIO_PORT_3] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 };
 
 static inline void gpio_clear_interrupt(gpio_t gpio)
@@ -271,17 +292,20 @@ void gpio_register_isr(gpio_t gpio, isr_function isr)
 
 void gpio_enable_interrupt(gpio_t gpio)
 {
+    // TODO ASSRT ON GPIO 3
     volatile uint16_t pin_idx = GPIO_PIN(gpio);
     *port_interrupt_enable_registers[GPIO_PORT(gpio)] |= pin_idx;
 }
 
 void gpio_disable_interrupt(gpio_t gpio)
 {
+    // TODO ASSRT ON GPIO 3
     *port_interrupt_enable_registers[GPIO_PORT(gpio)] &= ~GPIO_PIN(gpio);
 }
 
 void gpio_set_interrupt_trigger(gpio_t gpio, trigger_t trigger)
 {
+    // TODO ASSRT ON GPIO 3
     switch (trigger)
     {
     case TRIGGER_RISING:

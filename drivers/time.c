@@ -67,6 +67,7 @@ void watchdog_timer(void)
     watchdog_interrupt_cnt++;
 }
 
+/* TODO: Move watchdog timer handling to separate file? */
 uint32_t time_ms()
 {
     /* Disable interrupts while retrieving the counter */

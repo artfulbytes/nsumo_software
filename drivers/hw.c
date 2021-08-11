@@ -40,5 +40,3 @@ void hw_init()
     uart_init();
     hw_enable_global_interrupts();
 }
-
-

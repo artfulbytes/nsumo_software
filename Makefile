@@ -16,7 +16,7 @@ MSPGCC_BIN_DIR = $(MSPGCC_ROOT_DIR)/bin
 MSP_DEBUG_BIN_DIR = /home/artfulbytes/ti/ccs910/ccs/ccs_base/DebugServer/bin
 MSP_DEBUG_DRIVERS_DIR = /home/artfulbytes/ti/ccs910/ccs/ccs_base/DebugServer/drivers
 INCLUDE_GCC_DIR = /home/artfulbytes/ti/ccs910/ccs/ccs_base/msp430/include_gcc
-INCLUDE_DIRS = $(INCLUDE_GCC_DIR) ./drivers
+INCLUDE_DIRS = $(INCLUDE_GCC_DIR) ./drivers ./external/printf
 LIB_DIRS = $(INCLUDE_GCC_DIR)
 ROOT = .
 SRC_DIR = $(ROOT)
@@ -36,6 +36,7 @@ SOURCES = main.c \
           drivers/range_sensor.c \
           drivers/sleep.c \
           drivers/ir_remote.c \
+          drivers/uart.c \
           drive.c \
           state_machine.c \
           drivers/time.c \
@@ -43,6 +44,7 @@ SOURCES = main.c \
           line_detection.c \
           test.c \
           trace.c \
+          external/printf/printf.c \
 
 OBJECT_NAMES = $(SOURCES:.c=.o)
 OBJECTS = $(patsubst %,$(OBJ_DIR)/%,$(OBJECT_NAMES))

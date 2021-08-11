@@ -34,6 +34,7 @@ void test_run_motors()
     for(;;);
 }
 
+#if 0
 void test_adc()
 {
     adc_init();
@@ -53,6 +54,7 @@ void test_range_sensors()
         range_sensor_get_distances(&distances);
     }
 }
+#endif
 
 
 void test_ir_receiver()

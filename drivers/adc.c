@@ -74,7 +74,7 @@ void adc_init()
     ADC10CTL0 |= ENC + ADC10SC;
     initialized = true;
 }
-
+// TODO Remove extra line below... (look at ti examples on how they write a single line instead)
 void adc_isr(void) __attribute__ ((interrupt (ADC10_VECTOR)));
 void adc_isr(void)
 {
