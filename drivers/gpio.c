@@ -2,7 +2,7 @@
 #include "defines.h"
 #include <stdint.h>
 #include <stddef.h>
-
+#include <stdbool.h>
 
 static volatile uint8_t* port_dir_registers[] =
 {
@@ -16,11 +16,19 @@ static volatile uint8_t* port_ren_registers[] =
     &P2REN,
     &P3REN
 };
+
 static volatile uint8_t* port_out_registers[] =
 {
     &P1OUT,
     &P2OUT,
     &P3OUT
+};
+
+static volatile uint8_t* port_in_registers[] =
+{
+    &P1IN,
+    &P2IN,
+    &P3IN
 };
 
 static volatile uint8_t* port_sel_registers[] =
@@ -55,14 +63,16 @@ static volatile uint8_t* port_edge_select_registers[] =
 };
 
 // TODO: What about resistors??? and select (gpio, 1, 2, 3 makes sense?)?
+// What about pullup/pulldown for input (say for the line detector)
 // TODO: SHould default config already set the correct one? Becomes a bit double then...
+// WHat if we do SEL that is not GPIO, is all other settings discarded then?
 static const gpio_config_t gpio_initial_config[] =
 {
     {GPIO_IR_REMOTE, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
     {GPIO_UART_RXD, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_3},
     {GPIO_UART_TXD, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_3},
-    {GPIO_P13_UNUSED, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_P14_UNUSED, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_P13_UNUSED, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_1},
+    {GPIO_P14_UNUSED, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_1},
     {GPIO_XSHUT_RIGHT, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
     {GPIO_I2C_SCL, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_3},
     {GPIO_I2C_SDA, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_3},
@@ -78,7 +88,7 @@ static const gpio_config_t gpio_initial_config[] =
 
     {GPIO_XSHUT_FRONT_RIGHT, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
     {GPIO_LINE_DETECT_FRONT_RIGHT, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-    {GPIO_LINE_DETECT_FRONT_LEFT, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
+    {GPIO_LINE_DETECT_FRONT_LEFT, GPIO_INPUT, GPIO_HIGH, RESISTOR_ENABLED, GPIO_SEL_GPIO},
     {GPIO_XSHUT_LEFT, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
     {GPIO_LINE_DETECT_BACK_RIGHT, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
 // TODO: Fix the default of these
@@ -142,6 +152,11 @@ void gpio_set_output(gpio_t gpio, gpio_output_t output)
         *port_out_registers[GPIO_PORT(gpio)] &= ~GPIO_PIN(gpio);
         break;
     }
+}
+
+bool gpio_get_input(gpio_t gpio)
+{
+    return *port_in_registers[GPIO_PORT(gpio)] &= GPIO_PIN(gpio);
 }
 
 void gpio_set_resistor(gpio_t gpio, gpio_resistor_t resistor)

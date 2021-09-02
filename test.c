@@ -34,17 +34,17 @@ void test_run_motors()
     for(;;);
 }
 
-#if 0
 void test_adc()
 {
     adc_init();
-    adc_channel_values_t channel_values;
+    adc_channel_values_t channel_values = { 0 };
     for(;;)
     {
         adc_read(&channel_values);
     }
 }
 
+#if 0
 void test_range_sensors()
 {
     range_sensor_distances_t distances;

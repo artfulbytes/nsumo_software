@@ -5,6 +5,14 @@
 
 static void hw_init_clocks()
 {
+    /*
+    * Sanity chcking that constant not removed
+        - if (CALBC1_1MHZ==0xFF)                    // If calibration constant erased
+          {
+              while(1);                               // do not load, trap CPU!!
+          }
+    */
+
     /* SMCLK = 1MHz */
     BCSCTL1 = CALBC1_1MHZ; // Basic Clock System Control 1
     DCOCTL = CALDCO_1MHZ;  // DCO Clock Frequency Control

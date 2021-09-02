@@ -2,7 +2,7 @@
 #define GPIO_H
 
 #include <msp430.h>
-
+#include <stdbool.h>
 /* This file contains helper definitions and helper functions to make the pin handling easier. */
 
 /* [PIN_IDX (4-bit) | PORT (4-bit) | PIN (8-bit)] */
@@ -75,8 +75,8 @@ typedef enum {
 
 typedef enum {
     /* Port 1 */
-    GPIO_UART_RXD = GPIO_10,
-    GPIO_IR_REMOTE = GPIO_11, // TODO SWITCH BACK!
+    GPIO_IR_REMOTE = GPIO_10, // TODO SWITCH BACK!
+    GPIO_UART_RXD = GPIO_11,
     GPIO_UART_TXD = GPIO_12,
     GPIO_P13_UNUSED = GPIO_13,
     GPIO_P14_UNUSED = GPIO_14,
@@ -116,10 +116,11 @@ typedef enum {
     TRIGGER_FALLING,
 } trigger_t;
 
-void gpio_init();
+void gpio_init(void);
 void gpio_configure(const gpio_config_t* config);
 void gpio_set_direction(gpio_t gpio, gpio_dir_t direction);
 void gpio_set_output(gpio_t gpio, gpio_output_t output);
+bool gpio_get_input(gpio_t gpio);
 void gpio_set_resistor(gpio_t gpio, gpio_resistor_t resistor);
 void gpio_set_selection(gpio_t gpio, gpio_selection_t selection);
 
