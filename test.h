@@ -7,6 +7,6 @@ void test_run_motors(void);
 void test_adc(void);
 void test_range_sensors(void);
 void test_ir_receiver(void);
-void test_state_machine(void);
+void test_state_machine_ir(void);
 
 #endif /* TEST_H */

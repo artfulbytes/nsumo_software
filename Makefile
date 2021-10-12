@@ -37,8 +37,10 @@ SOURCES = main.c \
           drivers/sleep.c \
           drivers/ir_remote.c \
           drivers/uart.c \
+          drivers/led.c \
           drive.c \
           state_machine.c \
+          state_machine_ir.c \
           drivers/time.c \
           enemy_detection.c \
           line_detection.c \

@@ -161,7 +161,7 @@ static void handle_speed_command(robot_command_t speed_command)
     current_speed = new_speed;
 }
 
-void state_machine_handle_ir_command(ir_remote_command_t ir_command)
+void state_machine_ir_handle_command(ir_remote_command_t ir_command)
 {
     if (ir_command == COMMAND_NONE) {
         return;
@@ -201,7 +201,7 @@ void state_machine_handle_ir_command(ir_remote_command_t ir_command)
     current_state = new_state;
 }
 
-void state_machine_init()
+void state_machine_ir_init()
 {
     motor_init();
 }

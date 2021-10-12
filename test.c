@@ -71,16 +71,16 @@ void test_ir_receiver()
     }
 }
 
-void test_state_machine()
+void test_state_machine_ir()
 {
-    state_machine_init();
+    state_machine_ir_init();
 
     bool show_led = true;
     ir_remote_init();
     for(;;) {
         volatile ir_remote_command_t ir_command = ir_remote_get_command();
         if (ir_command != COMMAND_NONE) {
-            state_machine_handle_ir_command(ir_command);
+            state_machine_ir_handle_command(ir_command);
         }
         led_set_enable(LED_TEST, show_led);
         show_led = !show_led;
