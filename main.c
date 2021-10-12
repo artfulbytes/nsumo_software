@@ -16,18 +16,14 @@ int main(void)
 
     //uart_init();
     //TRACE_INFO("Booted");
-    //motor_init();
     led_init();
     test_adc();
-    //test_ir_receiver();
-   //motor_set_duty_cycle(MOTORS_RIGHT, 80);
     while(1) {
-        if (gpio_get_input(GPIO_LINE_DETECT_FRONT_LEFT)) {
+        if (gpio_get_input(GPIO_LINE_DETECT_BACK_LEFT)) {
             led_set_enable(LED_TEST, true);
         } else {
             led_set_enable(LED_TEST, false);
         }
-        //TRACE_INFO("Up and running");
     }
     //state_machine_run();
 }

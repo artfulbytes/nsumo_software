@@ -45,6 +45,7 @@ static uint16_t get_scaled_duty_cycle(uint16_t unscaled_duty_cycle)
 {
     /* Divide by two since motors are 6V max, and at 100% we supply them with the
      * battery voltage which is ~12 V at full charge. */
+    // TODO: Divide by 2 is too much now when battery voltage is 7.4 V
     return unscaled_duty_cycle >>= 1;
 }
 

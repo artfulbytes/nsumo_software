@@ -76,8 +76,8 @@ static robot_state_t handle_stop_command()
     if (current_state == STATE_STOP) {
         return STATE_STOP;
     }
-    motor_set_speed(MOTORS_LEFT, 0);
-    motor_set_speed(MOTORS_RIGHT, 0);
+    motor_set_duty_cycle(MOTORS_LEFT, 0);
+    motor_set_duty_cycle(MOTORS_RIGHT, 0);
     return STATE_STOP;
 }
 
@@ -89,8 +89,8 @@ static robot_state_t handle_forward_command()
     if (current_state != STATE_STOP) {
         motor_stop_safely();
     }
-    motor_set_speed(MOTORS_LEFT, current_speed);
-    motor_set_speed(MOTORS_RIGHT, current_speed);
+    motor_set_duty_cycle(MOTORS_LEFT, current_speed);
+    motor_set_duty_cycle(MOTORS_RIGHT, current_speed);
     return STATE_FORWARD;
 }
 
@@ -102,8 +102,8 @@ static robot_state_t handle_reverse_command()
     if (current_state != STATE_STOP) {
         motor_stop_safely();
     }
-    motor_set_speed(MOTORS_LEFT, -current_speed);
-    motor_set_speed(MOTORS_RIGHT, -current_speed);
+    motor_set_duty_cycle(MOTORS_LEFT, -current_speed);
+    motor_set_duty_cycle(MOTORS_RIGHT, -current_speed);
     return STATE_REVERSE;
 }
 
@@ -115,8 +115,8 @@ static robot_state_t handle_left_command()
     if (current_state != STATE_STOP) {
         motor_stop_safely();
     }
-    motor_set_speed(MOTORS_LEFT, -current_speed);
-    motor_set_speed(MOTORS_RIGHT, current_speed);
+    motor_set_duty_cycle(MOTORS_LEFT, -current_speed);
+    motor_set_duty_cycle(MOTORS_RIGHT, current_speed);
     return STATE_LEFT;
 }
 
@@ -128,8 +128,8 @@ static robot_state_t handle_right_command()
     if (current_state != STATE_STOP) {
         motor_stop_safely();
     }
-    motor_set_speed(MOTORS_LEFT, current_speed);
-    motor_set_speed(MOTORS_RIGHT, -current_speed);
+    motor_set_duty_cycle(MOTORS_LEFT, current_speed);
+    motor_set_duty_cycle(MOTORS_RIGHT, -current_speed);
     return STATE_RIGHT;
 }
 
@@ -142,20 +142,20 @@ static void handle_speed_command(robot_command_t speed_command)
     case STATE_STOP:
         break;
     case STATE_FORWARD:
-        motor_set_speed(MOTORS_LEFT, new_speed);
-        motor_set_speed(MOTORS_RIGHT, new_speed);
+        motor_set_duty_cycle(MOTORS_LEFT, new_speed);
+        motor_set_duty_cycle(MOTORS_RIGHT, new_speed);
         break;
     case STATE_REVERSE:
-        motor_set_speed(MOTORS_LEFT, -new_speed);
-        motor_set_speed(MOTORS_RIGHT, -new_speed);
+        motor_set_duty_cycle(MOTORS_LEFT, -new_speed);
+        motor_set_duty_cycle(MOTORS_RIGHT, -new_speed);
         break;
     case STATE_LEFT:
-        motor_set_speed(MOTORS_LEFT, -new_speed);
-        motor_set_speed(MOTORS_RIGHT, new_speed);
+        motor_set_duty_cycle(MOTORS_LEFT, -new_speed);
+        motor_set_duty_cycle(MOTORS_RIGHT, new_speed);
         break;
     case STATE_RIGHT:
-        motor_set_speed(MOTORS_LEFT, new_speed);
-        motor_set_speed(MOTORS_RIGHT, -new_speed);
+        motor_set_duty_cycle(MOTORS_LEFT, new_speed);
+        motor_set_duty_cycle(MOTORS_RIGHT, -new_speed);
         break;
     }
     current_speed = new_speed;
@@ -186,6 +186,7 @@ void state_machine_handle_ir_command(ir_remote_command_t ir_command)
         new_state = handle_right_command();
         break;
     case ROBOT_SET_SPEED_10:
+    case ROBOT_SET_SPEED_20:
     case ROBOT_SET_SPEED_30:
     case ROBOT_SET_SPEED_40:
     case ROBOT_SET_SPEED_50:

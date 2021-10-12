@@ -76,7 +76,7 @@ static inline void ir_remote_msg_buffer_add(uint32_t msg)
 
 static inline void ir_remote_reset()
 {
-    TACTL = MC_0 + TACLR;
+    TA1CTL = MC_0 + TACLR;
     ir_state = STATE_INACTIVE;
     bit_counter = 0;
     time_total = 0;
@@ -87,7 +87,7 @@ static inline void ir_remote_reset()
     gpio_set_interrupt_trigger(GPIO_IR_REMOTE, TRIGGER_FALLING);
 }
 
-void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) Timer_A (void) {
+void __attribute__ ((interrupt(TIMER1_A0_VECTOR))) Timer_A (void) {
     if (time_total == T_MAX_USEC) {
         /* Timeout */
         ir_remote_reset();
@@ -101,8 +101,8 @@ void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) Timer_A (void) {
  * and the remote controlling is just for testing, so leave it as is for now. */
 static void ir_remote_isr() {
     /* TODO: We should stop the timer while reading TA0R (see datasheet) */
-    time_passed = (time_total + TA0R) - time_last_interrupt;
-    time_last_interrupt = (time_total + TA0R);
+    time_passed = (time_total + TA1R) - time_last_interrupt;
+    time_last_interrupt = (time_total + TA1R);
     if ((bit_counter == 32) && (ir_state == STATE_RECEIVING_BITS || ir_state == STATE_REPEATING)) {
         /* We only get to here if the user keeps a key pressed */
         /* TODO: set upper limit too? */
@@ -125,8 +125,8 @@ static void ir_remote_isr() {
     switch (ir_state) {
     case STATE_INACTIVE:
     case STATE_REPEATING:
-        TACTL |= TACLR;
-        TACTL = TASSEL_2 + MC_1;
+        TA1CTL |= TACLR;
+        TA1CTL = TASSEL_2 + MC_1;
         time_total = 0;
         gpio_set_interrupt_trigger(GPIO_IR_REMOTE, TRIGGER_RISING);
         ir_state = STATE_AGC;
@@ -182,9 +182,9 @@ void ir_remote_init()
     gpio_set_interrupt_trigger(GPIO_IR_REMOTE, TRIGGER_FALLING);
     gpio_register_isr(GPIO_IR_REMOTE, ir_remote_isr);
 
-    TACCTL0 = CCIE;  /* TACCR0 interrupt enabled */
-    TACTL = TASSEL_2 + MC_1; /* SMCLK, up mode */
-    TACCR0 = T_MAX_USEC; /* Interrupt after 65 us */
+    TA1CCTL0 = CCIE;  /* TACCR0 interrupt enabled */
+    TA1CTL = TASSEL_2 + MC_1; /* SMCLK, up mode */
+    TA1CCR0 = T_MAX_USEC; /* Interrupt after 65 us */
 }
 
 ir_remote_command_t ir_remote_get_command()

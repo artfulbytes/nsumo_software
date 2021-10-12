@@ -23,7 +23,6 @@ static void set_period(uint16_t pwm_period)
  */
 void pwm_init()
 {
-    return;
     if (PWM_PERIOD != 100) {
         /* Doesn't support other PWM periods at the moment */
         return;
@@ -61,6 +60,7 @@ void pwm_set_duty_cycle(pwm_out_t pwm_out, uint16_t duty_cycle_percent)
     }
     /* TODO: We might be off by 1 here, when does the interrupt occur at duty_cycle_percent or
      * at duty_cycle_percent - 1?, shouldn't matter in practice though. */
+    // TODO: Why != vs = below? mistake?
     switch (pwm_out)
     {
     case PWM_OUT_0:
