@@ -45,6 +45,5 @@ void hw_init()
     hw_setup_watchdog_interrupt();
     hw_init_clocks();
     gpio_init();
-    uart_init();
     hw_enable_global_interrupts();
 }

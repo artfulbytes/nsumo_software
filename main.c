@@ -6,9 +6,11 @@
 int main(void)
 {
     hw_init();
+
     //TRACE_INFO("Booted");
 
-    test_vl53l0x();
+    //test_vl53l0x();
+    test_qre1113();
     //state_machine_run();
 
     // TODO: Disable everything and endless loop in case of failure

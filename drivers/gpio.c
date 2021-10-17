@@ -1,5 +1,6 @@
 #include "gpio.h"
 #include "defines.h"
+#include <msp430.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>

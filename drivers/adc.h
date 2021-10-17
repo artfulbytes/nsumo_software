@@ -2,16 +2,27 @@
 #define ADC_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
-typedef struct {
-    uint16_t left_sensor;
-    uint16_t front_left_sensor;
-    uint16_t front_sensor;
-    uint16_t front_right_sensor;
-    uint16_t right_sensor;
-} adc_channel_values_t;
+typedef enum {
+    ADC_CHANNEL_0,
+    ADC_CHANNEL_1,
+    ADC_CHANNEL_2,
+    ADC_CHANNEL_3,
+    ADC_CHANNEL_4,
+    ADC_CHANNEL_5,
+    ADC_CHANNEL_6,
+    ADC_CHANNEL_7,
+    ADC_CHANNEL_CNT
+} adc_channel_t;
 
-void adc_init(void);
-void adc_read(adc_channel_values_t* channel_values);
+typedef struct adc_conf {
+    bool enable[ADC_CHANNEL_CNT];
+} adc_conf_t;
+
+typedef uint16_t adc_values_t[ADC_CHANNEL_CNT];
+
+void adc_init(adc_conf_t* conf);
+void adc_read(adc_values_t values);
 
 #endif /* ADC_H */

@@ -7,8 +7,9 @@
 #include "ir_remote.h"
 #include "state_machine_ir.h"
 #include "time.h"
-#include "drivers/led.h"
 #include "vl53l0x.h"
+#include "led.h"
+#include "qre1113.h"
 
 void test_dimming_led()
 {
@@ -38,11 +39,29 @@ void test_run_motors()
 
 void test_adc()
 {
-    adc_init();
-    adc_channel_values_t channel_values = { 0 };
+    adc_conf_t conf = { {false} };
+    conf.enable[GPIO_PIN_IDX(GPIO_10)] = true;
+    conf.enable[GPIO_PIN_IDX(GPIO_13)] = true;
+    conf.enable[GPIO_PIN_IDX(GPIO_14)] = true;
+    conf.enable[GPIO_PIN_IDX(GPIO_15)] = true;
+    adc_init(&conf);
+    adc_values_t adc_values = { 0 };
+
     for(;;)
     {
-        adc_read(&channel_values);
+        adc_read(adc_values);
+    }
+}
+
+void test_qre1113()
+{
+    led_init();
+    qre1113_init();
+    qre1113_voltages_t lines_detected = {0};
+    while (1) {
+        qre1113_get_voltages(&lines_detected);
+        led_set_enable(LED_TEST, lines_detected.front_left < 800);
+        __delay_cycles(50000);
     }
 }
 

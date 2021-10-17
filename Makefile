@@ -33,13 +33,13 @@ SOURCES = main.c \
           drivers/pwm.c \
           drivers/motor.c \
           drivers/adc.c \
-          drivers/range_sensor.c \
           drivers/sleep.c \
           drivers/ir_remote.c \
           drivers/uart.c \
           drivers/led.c \
           drivers/i2c.c \
           drivers/vl53l0x.c \
+          drivers/qre1113.c \
           drive.c \
           state_machine.c \
           state_machine_ir.c \

@@ -1,11 +1,11 @@
 #ifndef GPIO_H
 #define GPIO_H
 
-#include <msp430.h>
 #include <stdbool.h>
 /* This file contains helper definitions and helper functions to make the pin handling easier. */
 
-/* [PIN_IDX (4-bit) | PORT (4-bit) | PIN (8-bit)] */
+/* Each GPIO pin is represented as a uint16_t containing
+ * [PIN_IDX (4-bit) | PORT (4-bit) | PIN (8-bit)] */
 #define GPIO_PIN_IDX_OFFSET             (12u)
 #define GPIO_PIN_IDX_MASK               (0xFu << GPIO_PIN_IDX_OFFSET)
 #define GPIO_PIN_IDX(gpio)              ((gpio & GPIO_PIN_IDX_MASK) >> GPIO_PIN_IDX_OFFSET)
@@ -14,36 +14,39 @@
 #define GPIO_PORT(gpio)                 ((gpio & GPIO_PORT_MASK) >> GPIO_PORT_OFFSET)
 #define GPIO_PIN_MASK                   (0xFFu)
 #define GPIO_PIN(gpio)                  (gpio & GPIO_PIN_MASK)
-#define GPIO_MAKE(pin_idx, port, pin)   ((pin_idx << GPIO_PIN_IDX_OFFSET) | (port << GPIO_PORT_OFFSET) | pin)
+#define GPIO_PIN_IDX_TO_BIT(pin_idx)    (1 << pin_idx)
+#define GPIO_MAKE(pin_idx, port)        ((pin_idx << GPIO_PIN_IDX_OFFSET) \
+                                         | (port << GPIO_PORT_OFFSET) \
+                                         | GPIO_PIN_IDX_TO_BIT(pin_idx))
 #define GPIO_PORT_CNT                   (3u)
 #define GPIO_PIN_CNT_PER_PORT           (8u)
 
-#define GPIO_10 GPIO_MAKE(0, GPIO_PORT_1, BIT0)
-#define GPIO_11 GPIO_MAKE(1, GPIO_PORT_1, BIT1)
-#define GPIO_12 GPIO_MAKE(2, GPIO_PORT_1, BIT2)
-#define GPIO_13 GPIO_MAKE(3, GPIO_PORT_1, BIT3)
-#define GPIO_14 GPIO_MAKE(4, GPIO_PORT_1, BIT4)
-#define GPIO_15 GPIO_MAKE(5, GPIO_PORT_1, BIT5)
-#define GPIO_16 GPIO_MAKE(6, GPIO_PORT_1, BIT6)
-#define GPIO_17 GPIO_MAKE(7, GPIO_PORT_1, BIT7)
+#define GPIO_10 GPIO_MAKE(0, GPIO_PORT_1)
+#define GPIO_11 GPIO_MAKE(1, GPIO_PORT_1)
+#define GPIO_12 GPIO_MAKE(2, GPIO_PORT_1)
+#define GPIO_13 GPIO_MAKE(3, GPIO_PORT_1)
+#define GPIO_14 GPIO_MAKE(4, GPIO_PORT_1)
+#define GPIO_15 GPIO_MAKE(5, GPIO_PORT_1)
+#define GPIO_16 GPIO_MAKE(6, GPIO_PORT_1)
+#define GPIO_17 GPIO_MAKE(7, GPIO_PORT_1)
 
-#define GPIO_20 GPIO_MAKE(0, GPIO_PORT_2, BIT0)
-#define GPIO_21 GPIO_MAKE(1, GPIO_PORT_2, BIT1)
-#define GPIO_22 GPIO_MAKE(2, GPIO_PORT_2, BIT2)
-#define GPIO_23 GPIO_MAKE(3, GPIO_PORT_2, BIT3)
-#define GPIO_24 GPIO_MAKE(4, GPIO_PORT_2, BIT4)
-#define GPIO_25 GPIO_MAKE(5, GPIO_PORT_2, BIT5)
-#define GPIO_26 GPIO_MAKE(6, GPIO_PORT_2, BIT6)
-#define GPIO_27 GPIO_MAKE(7, GPIO_PORT_2, BIT7)
+#define GPIO_20 GPIO_MAKE(0, GPIO_PORT_2)
+#define GPIO_21 GPIO_MAKE(1, GPIO_PORT_2)
+#define GPIO_22 GPIO_MAKE(2, GPIO_PORT_2)
+#define GPIO_23 GPIO_MAKE(3, GPIO_PORT_2)
+#define GPIO_24 GPIO_MAKE(4, GPIO_PORT_2)
+#define GPIO_25 GPIO_MAKE(5, GPIO_PORT_2)
+#define GPIO_26 GPIO_MAKE(6, GPIO_PORT_2)
+#define GPIO_27 GPIO_MAKE(7, GPIO_PORT_2)
 
-#define GPIO_30 GPIO_MAKE(0, GPIO_PORT_3, BIT0)
-#define GPIO_31 GPIO_MAKE(1, GPIO_PORT_3, BIT1)
-#define GPIO_32 GPIO_MAKE(2, GPIO_PORT_3, BIT2)
-#define GPIO_33 GPIO_MAKE(3, GPIO_PORT_3, BIT3)
-#define GPIO_34 GPIO_MAKE(4, GPIO_PORT_3, BIT4)
-#define GPIO_35 GPIO_MAKE(5, GPIO_PORT_3, BIT5)
-#define GPIO_36 GPIO_MAKE(6, GPIO_PORT_3, BIT6)
-#define GPIO_37 GPIO_MAKE(7, GPIO_PORT_3, BIT7)
+#define GPIO_30 GPIO_MAKE(0, GPIO_PORT_3)
+#define GPIO_31 GPIO_MAKE(1, GPIO_PORT_3)
+#define GPIO_32 GPIO_MAKE(2, GPIO_PORT_3)
+#define GPIO_33 GPIO_MAKE(3, GPIO_PORT_3)
+#define GPIO_34 GPIO_MAKE(4, GPIO_PORT_3)
+#define GPIO_35 GPIO_MAKE(5, GPIO_PORT_3)
+#define GPIO_36 GPIO_MAKE(6, GPIO_PORT_3)
+#define GPIO_37 GPIO_MAKE(7, GPIO_PORT_3)
 
 typedef enum {
     GPIO_PORT_1,

@@ -1,103 +1,77 @@
 #include "adc.h"
-#include "gpio.h"
-
 #include <msp430.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <defines.h>
 
-// TODO: Change description.... Make this driver more flexible if possible
-
-/* We only need five channels, but the DTO samples them contiguously and the pin of
- * channel 1 and 2 is occupied by other functions. */
-#define NUM_ADC_CHANNELS 7
-
-typedef enum
-{
-    /* The ADC10 DTC writes the channel sample values in opposite order */
-    CHANNEL_SENSOR_LEFT = 6,
-    CHANNEL_UNUSED_0 = 5, /* Occupied by UART */
-    CHANNEL_UNUSED_1 = 4, /* Occupied by UART */
-    CHANNEL_SENSOR_FRONT_LEFT = 3,
-    CHANNEL_SENSOR_FRONT = 2,
-    CHANNEL_SENSOR_FRONT_RIGHT = 1,
-    CHANNEL_SENSOR_RIGHT = 0
-} channel_t;
-
-static volatile uint16_t data_transfer_block[NUM_ADC_CHANNELS];
-static volatile uint16_t samples_buffer_left_sensor[3];
-static volatile uint16_t samples_buffer_front_left_sensor[3];
-static volatile uint16_t samples_buffer_front_sensor[3];
-static volatile uint16_t samples_buffer_front_right_sensor[3];
-static volatile uint16_t samples_buffer_right_sensor[3];
-static volatile uint16_t sample_idx = 0;
+static volatile uint16_t data_transfer_block[ADC_CHANNEL_CNT] = {0};
 static bool initialized = false;
+static bool adc_channel_enabled[ADC_CHANNEL_CNT] = {false};
+static volatile adc_values_t copied_adc_values = {0};
+/* The DTO samples the channels contiguously, so this count will be larger than the
+ * number of channels we actually use if they are not neighbouring channels. For example,
+ * we may only use A0, A3, A4, but DTO still reads A1, A2. */
+static uint8_t dtc_channel_cnt = 0;
+static uint8_t last_chnl_idx = 0;
 
-
-void adc_init()
+void adc_init(adc_conf_t* adc_conf)
 {
     if (initialized) {
         return;
     }
 
-    // FIX COMMENT...
-    /* Configure it to run of ACLK (~8-32 kHz, depends on unit). The exact speed doesn't matter,
-     * as long as we sample faster than ~40 ms, we should be fine, because that's the update rate
-     * of the range sensor. Moreover, we configure it to sample the channels and then trigger
-     * an interrupt, which let us push the values to a buffer before starting the sampling
-     * again. */
+    uint8_t adc10ae0 = 0;
+    uint8_t first_chnl_idx = 0;
+    for (int chnl = 0; chnl < ADC_CHANNEL_CNT; chnl++) {
+        if (adc_conf->enable[chnl]) {
+            adc10ae0 += (1 << chnl); // Enable corresponding GPIO pin
+            adc_channel_enabled[chnl] = true;
+            if (dtc_channel_cnt == 0) {
+                first_chnl_idx = chnl;
+            }
+            last_chnl_idx = chnl;
+            dtc_channel_cnt = (last_chnl_idx - first_chnl_idx) + 1;
+        }
+    }
+
+    if (dtc_channel_cnt == 0) {
+        return;
+    }
+
+    const uint16_t inch = last_chnl_idx * 4096;
+
+    /* Configure it to run of ACLK (~8-32 kHz, depends on unit), to sample the channels
+     * and then trigger an interrupt, which let us push the values to a buffer before
+     * starting the sampling again. */
     ADC10CTL0 = SREF_0 + ADC10SHT_3 + ADC10ON + MSC + ADC10IE;
-    ADC10CTL1 = INCH_6 + ADC10DIV_0 + CONSEQ_1 + SHS_0 + ADC10SSEL_1;
-    //ADC10CTL1 = INCH_4 + ADC10DIV_0 + CONSEQ_1 + SHS_0 + ADC10SSEL_1;
-    ADC10AE0 = GPIO_PIN(GPIO_LINE_DETECT_FRONT_LEFT) +
-               GPIO_PIN(GPIO_LINE_DETECT_BACK_LEFT);
-               //GPIO_PIN(GPIO_ADC_LEFT_SENSOR) +
-               //GPIO_PIN(GPIO_ADC_FRONT_LEFT_SENSOR) +
-               //GPIO_PIN(GPIO_ADC_FRONT_SENSOR) +
-               //GPIO_PIN(GPIO_ADC_FRONT_RIGHT_SENSOR) +
-               //GPIO_PIN(GPIO_ADC_RIGHT_SENSOR);
-    ADC10DTC1 = NUM_ADC_CHANNELS;
+    ADC10CTL1 = inch + ADC10DIV_0 + CONSEQ_1 + SHS_0 + ADC10SSEL_1;
+    ADC10AE0 = adc10ae0;
+    ADC10DTC1 = dtc_channel_cnt;
     ADC10DTC0 = ADC10CT;
     ADC10SA = (uint16_t)data_transfer_block;
     ADC10CTL0 |= ENC + ADC10SC;
     initialized = true;
 }
-// TODO Remove extra line below... (look at ti examples on how they write a single line instead)
+
 void __attribute__ ((interrupt(ADC10_VECTOR))) adc_isr (void)
 {
     ADC10CTL0 &= ~ENC;
-    sample_idx += 1;
-    if (sample_idx == ARRAY_SIZE(samples_buffer_left_sensor)) {
-        sample_idx = 0;
+    for (int chnl = 0; chnl < ADC_CHANNEL_CNT; chnl++) {
+        if (adc_channel_enabled[chnl]) {
+            /* The ADC10 DTC writes the channel sample values in opposite order */
+            copied_adc_values[chnl] = data_transfer_block[last_chnl_idx - chnl];
+        }
     }
-
-    samples_buffer_left_sensor[0] = data_transfer_block[0];
-    samples_buffer_front_left_sensor[0] = data_transfer_block[1];
-    //samples_buffer_front_sensor[sample_idx] = data_transfer_block[CHANNEL_SENSOR_FRONT];
-    //samples_buffer_front_right_sensor[sample_idx] = data_transfer_block[CHANNEL_SENSOR_FRONT_RIGHT];
-    //samples_buffer_right_sensor[sample_idx] = data_transfer_block[CHANNEL_SENSOR_RIGHT];
-
     ADC10CTL0 |= ENC + ADC10SC;
 }
 
-void adc_read(adc_channel_values_t* channel_values)
+void adc_read(adc_values_t values)
 {
     /* Disable ADC interrupt while retrieving the values */
     ADC10CTL0 &= ~ADC10IE;
-    /* Median filter the ADC values to remove spikes. This might also get better
-     * once we add a capacitor on the range sensor. */
-    channel_values->left_sensor = samples_buffer_left_sensor[0];
-
-    channel_values->front_left_sensor = samples_buffer_front_left_sensor[0];
-    //channel_values->front_sensor = median_filter_3(samples_buffer_front_sensor[0],
-    //                                               samples_buffer_front_sensor[1],
-    //                                               samples_buffer_front_sensor[2]);
-    //channel_values->front_right_sensor = median_filter_3(samples_buffer_front_right_sensor[0],
-    //                                                     samples_buffer_front_right_sensor[1],
-    //                                                     samples_buffer_front_right_sensor[2]);
-    //channel_values->right_sensor = median_filter_3(samples_buffer_right_sensor[0],
-    //                                               samples_buffer_right_sensor[1],
-    //                                               samples_buffer_right_sensor[2]);
+    for (int chnl = 0; chnl < ADC_CHANNEL_CNT; chnl++) {
+        if (adc_channel_enabled[chnl]) {
+            values[chnl] = copied_adc_values[chnl];
+        }
+    }
     ADC10CTL0 |= ADC10IE;
-    ADC10CTL0 |= ENC + ADC10SC;
 }
