@@ -8,6 +8,7 @@
 #include "state_machine_ir.h"
 #include "time.h"
 #include "drivers/led.h"
+#include "vl53l0x.h"
 
 void test_dimming_led()
 {
@@ -45,18 +46,27 @@ void test_adc()
     }
 }
 
-#if 0
-void test_range_sensors()
+typedef struct ranges
 {
-    range_sensor_distances_t distances;
+     uint16_t left;
+     uint16_t front_left;
+     uint16_t front;
+     uint16_t front_right;
+     uint16_t right;
+} ranges_t;
 
-    for(;;)
-    {
-        range_sensor_get_distances(&distances);
+void test_vl53l0x()
+{
+    ranges_t ranges;
+    bool success = vl53l0x_init();
+    while (success) {
+        success = vl53l0x_read_range_single(VL53L0X_IDX_FRONT, &ranges.front);
+        success &= vl53l0x_read_range_single(VL53L0X_IDX_LEFT, &ranges.left);
+        success &= vl53l0x_read_range_single(VL53L0X_IDX_RIGHT, &ranges.right);
+        success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_LEFT, &ranges.front_left);
+        success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_RIGHT, &ranges.front_right);
     }
 }
-#endif
-
 
 void test_ir_receiver()
 {

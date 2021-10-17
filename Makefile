@@ -38,6 +38,8 @@ SOURCES = main.c \
           drivers/ir_remote.c \
           drivers/uart.c \
           drivers/led.c \
+          drivers/i2c.c \
+          drivers/vl53l0x.c \
           drive.c \
           state_machine.c \
           state_machine_ir.c \
