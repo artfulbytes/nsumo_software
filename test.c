@@ -11,6 +11,7 @@
 #include "led.h"
 #include "qre1113.h"
 #include "trace.h"
+#include "line_detection.h"
 
 void test_dimming_led()
 {
@@ -68,6 +69,15 @@ void test_qre1113()
               voltages.front_left, voltages.front_right,
               voltages.back_left, voltages.back_right);
         __delay_cycles(500000);
+    }
+}
+
+void test_line_detection()
+{
+    line_detection_init();
+    while (1) {
+        line_detection_t line_detection = line_detection_get();
+        trace("%s\n", line_detection_enum_to_str(line_detection));
     }
 }
 

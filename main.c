@@ -11,7 +11,8 @@ int main(void)
     }
     TRACE_INFO("Booted");
 
-    test_vl53l0x();
+    test_line_detection();
+    //test_vl53l0x();
     //test_qre1113();
     //state_machine_run();
 

@@ -1,22 +1,47 @@
 #if BUILD_MCU
 #include "line_detection.h"
+#include "drivers/qre1113.h"
 #else
-#include "NsumoController/nsumo/line_detection.h"
+#include "line_detection.h"
 #include "NsumoController/voltage_lines.h"
 #include "microcontroller_c_bindings.h"
 #endif
 
 #include <stdbool.h>
 
+#if BUILD_MCU
+#define LINE_SENSOR_VOLTAGE_THRESHOLD (700)
+#else
 #define LINE_SENSOR_VOLTAGE_THRESHOLD (0.0f)
+#endif
+
+static char* line_detection_str[] =
+{
+    [LINE_DETECTION_NONE] = "LINE_DETECTION_NONE",
+    [LINE_DETECTION_FRONT] = "LINE_DETECTION_FRONT",
+    [LINE_DETECTION_BACK] = "LINE_DETECTION_BACK",
+    [LINE_DETECTION_FRONT_LEFT] = "LINE_DETECTION_FRONT_LEFT",
+    [LINE_DETECTION_BACK_LEFT] = "LINE_DETECTION_BACK_LEFT",
+    [LINE_DETECTION_FRONT_RIGHT] = "LINE_DETECTION_FRONT_RIGHT",
+    [LINE_DETECTION_BACK_RIGHT] = "LINE_DETECTION_BACK_RIGHT",
+    [LINE_DETECTION_LEFT] = "LINE_DETECTION_LEFT",
+    [LINE_DETECTION_RIGHT] = "LINE_DETECTION_RIGHT"
+};
+
+char* line_detection_enum_to_str(line_detection_t line_detection)
+{
+    return line_detection_str[line_detection];
+}
 
 line_detection_t line_detection_get()
 {
 #if BUILD_MCU
-    const bool frontLeft = false;
-    const bool frontRight = false;
-    const bool backLeft = false;
-    const bool backRight = false;
+    qre1113_voltages_t voltages = {0};
+    qre1113_get_voltages(&voltages);
+    const bool frontLeft = voltages.front_left < LINE_SENSOR_VOLTAGE_THRESHOLD;
+    const bool frontRight = voltages.front_right < LINE_SENSOR_VOLTAGE_THRESHOLD;
+    const bool backLeft = voltages.back_left < LINE_SENSOR_VOLTAGE_THRESHOLD;
+    const bool backRight = voltages.back_right < LINE_SENSOR_VOLTAGE_THRESHOLD;
 #else
     const bool frontLeft = get_voltage(VOLTAGE_FRONT_LEFT_LINE_DETECTOR) > LINE_SENSOR_VOLTAGE_THRESHOLD;
     const bool frontRight = get_voltage(VOLTAGE_FRONT_RIGHT_LINE_DETECTOR) > LINE_SENSOR_VOLTAGE_THRESHOLD;
@@ -52,5 +77,7 @@ line_detection_t line_detection_get()
 
 void line_detection_init()
 {
-    /* TODO: Init line sensors */
+#if BUILD_MCU
+    qre1113_init();
+#endif
 }
