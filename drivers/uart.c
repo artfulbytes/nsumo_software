@@ -1,10 +1,16 @@
 #include <msp430.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "printf.h"
 
-void uart_init(void)
+static bool initialized = false;
+
+bool uart_init(void)
 {
+    if (initialized) {
+        return false;
+    }
     /* USCI must be reset before configuration */
     if (UCA0CTL1 & UCSWRST) {
         /* Configure SMCLK as clock source */
@@ -21,6 +27,8 @@ void uart_init(void)
         /* Reset the USCI */
         UCA0CTL1 &= ~UCSWRST;
     }
+    initialized = true;
+    return true;
 }
 
 /* This is the internal function used by mpaland/printf (see external/printf) */

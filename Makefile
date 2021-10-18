@@ -16,7 +16,7 @@ MSPGCC_BIN_DIR = $(MSPGCC_ROOT_DIR)/bin
 MSP_DEBUG_BIN_DIR = /home/artfulbytes/ti/ccs910/ccs/ccs_base/DebugServer/bin
 MSP_DEBUG_DRIVERS_DIR = /home/artfulbytes/ti/ccs910/ccs/ccs_base/DebugServer/drivers
 INCLUDE_GCC_DIR = /home/artfulbytes/ti/ccs910/ccs/ccs_base/msp430/include_gcc
-INCLUDE_DIRS = $(INCLUDE_GCC_DIR) ./drivers ./external/printf
+INCLUDE_DIRS = $(INCLUDE_GCC_DIR) ./drivers ./external/printf ./
 LIB_DIRS = $(INCLUDE_GCC_DIR)
 ROOT = .
 SRC_DIR = $(ROOT)
@@ -57,9 +57,9 @@ OBJECTS = $(patsubst %,$(OBJ_DIR)/%,$(OBJECT_NAMES))
 # Flags
 ###########################################################
 MCU = msp430g2553
-CFLAGS = -mmcu=$(MCU) $(addprefix -I,$(INCLUDE_DIRS)) -DBUILD_MCU
+CFLAGS = -mmcu=$(MCU) $(addprefix -I,$(INCLUDE_DIRS)) -DBUILD_MCU -DPRINTF_INCLUDE_CONFIG_H -Og -mmcu=msp430g2553
 
-LDFLAGS = -mmcu=$(MCU) $(addprefix -L,$(LIB_DIRS))
+LDFLAGS = -mmcu=$(MCU) $(addprefix -L,$(LIB_DIRS)) -Wl,--gc-sections
 
 ###########################################################
 # Build

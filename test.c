@@ -10,6 +10,7 @@
 #include "vl53l0x.h"
 #include "led.h"
 #include "qre1113.h"
+#include "trace.h"
 
 void test_dimming_led()
 {
@@ -57,11 +58,16 @@ void test_qre1113()
 {
     led_init();
     qre1113_init();
-    qre1113_voltages_t lines_detected = {0};
+    qre1113_voltages_t voltages = {0};
     while (1) {
-        qre1113_get_voltages(&lines_detected);
-        led_set_enable(LED_TEST, lines_detected.front_left < 800);
-        __delay_cycles(50000);
+        qre1113_get_voltages(&voltages);
+        trace("Line sensor front left %d\n"
+              "Line sensor front right %d\n"
+              "Line sensor back left %d\n"
+              "Line sensor back right %d\n",
+              voltages.front_left, voltages.front_right,
+              voltages.back_left, voltages.back_right);
+        __delay_cycles(500000);
     }
 }
 
@@ -84,6 +90,15 @@ void test_vl53l0x()
         success &= vl53l0x_read_range_single(VL53L0X_IDX_RIGHT, &ranges.right);
         success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_LEFT, &ranges.front_left);
         success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_RIGHT, &ranges.front_right);
+        trace("Range sensor left %d\n"
+              "Range sensor right %d\n"
+              "Range sensor front left %d\n"
+              "Range sensor front %d\n"
+              "Range sensor front right %d\n",
+              ranges.left, ranges.right,
+              ranges.front_left, ranges.front,
+              ranges.front_right);
+        __delay_cycles(500000);
     }
 }
 
