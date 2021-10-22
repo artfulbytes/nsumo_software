@@ -12,6 +12,7 @@
 #include "qre1113.h"
 #include "trace.h"
 #include "line_detection.h"
+#include "opponent_detection.h"
 
 void test_dimming_led()
 {
@@ -109,6 +110,18 @@ void test_vl53l0x()
               ranges.front_left, ranges.front,
               ranges.front_right);
         __delay_cycles(500000);
+    }
+}
+
+void test_enemy_detection()
+{
+    enemy_detection_init();
+    while (1) {
+        if (enemy_detection_get() & ENEMY_DETECTION_FRONT) {
+            trace("FRONT\n");
+        } else {
+            trace("NONE\n");
+        }
     }
 }
 

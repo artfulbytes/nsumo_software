@@ -2,6 +2,6 @@
 #define __state_machine
 
 void state_machine_ir_handle_command(ir_remote_command_t ir_command);
-void state_machine_ir_init();
+void state_machine_ir_init(void);
 
 #endif //__state_machine

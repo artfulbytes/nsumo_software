@@ -11,5 +11,6 @@ void test_state_machine_ir(void);
 void test_vl53l0x(void);
 void test_qre1113(void);
 void test_line_detection(void);
+void test_enemy_detection(void);
 
 #endif /* TEST_H */

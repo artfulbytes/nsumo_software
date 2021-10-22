@@ -2,7 +2,7 @@
 #ifdef BUILD_MCU
 #include "state_machine.h"
 #include "drive.h"
-#include "enemy_detection.h"
+#include <opponent_detection.h>
 #include <line_detection.h>
 #include "time.h"
 #include "sleep.h"
@@ -276,7 +276,9 @@ static main_state_t state_machine_test_run(ir_remote_command_t remote_command)
 static void init()
 {
     /* TODO: Init time here? */
-    enemy_detection_init();
+
+    // TODO: Uncomment when enemy detection works properly
+    //enemy_detection_init();
     line_detection_init();
     ir_remote_init();
     drive_init();
@@ -308,7 +310,8 @@ void state_machine_run()
          * don't need to gather variables over and over */
         /* TODO: Define all sleep constants as defines! */
         line_detection_t line_detection = line_detection_get();
-        enemy_detection_t enemy_detection = enemy_detection_get();
+        // TODO: Retrieve enemy detection here once it works
+        enemy_detection_t enemy_detection = ENEMY_DETECTION_NONE; //enemy_detection_get();
         ir_remote_command_t remote_command = ir_remote_get_command();
         if (remote_command != COMMAND_NONE) {
             drive_stop();
@@ -328,7 +331,7 @@ void state_machine_run()
                 next_state = MAIN_STATE_SEARCH_2;
                 break;
             }
-            //drive_set(DRIVE_ROTATE_RIGHT, DRIVE_SPEED_SLOW);
+            drive_set(DRIVE_ROTATE_RIGHT, DRIVE_SPEED_SLOW);
 
             break;
         case MAIN_STATE_SEARCH_2: /* Drive around to find the enemy */
@@ -338,7 +341,7 @@ void state_machine_run()
                 break;
             }
             if (line_detection == LINE_DETECTION_NONE) {
-                //drive_set(DRIVE_FORWARD, DRIVE_SPEED_FASTEST);
+                drive_set(DRIVE_FORWARD, DRIVE_SPEED_FASTEST);
             } else {
                 drive_stop();
                 next_state = MAIN_STATE_RETREAT;
@@ -373,18 +376,22 @@ void state_machine_run()
              * do arcturn manuever. Basically, if retreat manuever is 200ms drive back, then we should
              * see any back<->forth detection that happens under 200ms as line being to left/right...*/
             /* TODO:Should handle having an enemy and a line detected... */
+            break;
         case MAIN_STATE_TEST:
             next_state = state_machine_test_run(remote_command);
             break;
         }
+
         if (is_enemy_out(line_detection, enemy_detection)) {
             trace("Enemy out!\n");
         }
+
         if (next_state != current_state) {
             time_at_state_change = time_ms();
             current_state = next_state;
             trace("New state: %s\n", main_state_str(current_state));
         }
+
         /* Sleep a bit to offload the host CPU :) */
 #ifndef BUILD_MCU
         sleep_ms(1);

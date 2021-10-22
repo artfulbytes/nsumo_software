@@ -36,7 +36,7 @@ char* line_detection_enum_to_str(line_detection_t line_detection)
 line_detection_t line_detection_get()
 {
 #if BUILD_MCU
-    qre1113_voltages_t voltages = {0};
+    qre1113_voltages_t voltages;
     qre1113_get_voltages(&voltages);
     const bool frontLeft = voltages.front_left < LINE_SENSOR_VOLTAGE_THRESHOLD;
     const bool frontRight = voltages.front_right < LINE_SENSOR_VOLTAGE_THRESHOLD;

@@ -1,16 +1,17 @@
 #if BUILD_MCU
 #include "drive.h"
 #include "motor.h"
+#include "trace.h"
 #else
 #include "NsumoController/nsumo/drive.h"
 #include "NsumoController/nsumo/drivers/motor.h"
 #endif
 
 #define DUTY_CYCLE_STOP (0)
-#define DUTY_CYCLE_SLOW (20)
+#define DUTY_CYCLE_SLOW (50)
 #define DUTY_CYCLE_MEDIUM (50)
-#define DUTY_CYCLE_FAST (80)
-#define DUTY_CYCLE_FASTEST (100)
+#define DUTY_CYCLE_FAST (50)
+#define DUTY_CYCLE_FASTEST (50)
 
 #define ARCTURN_DIFF_CONSTANT (0.375f)
 
@@ -70,12 +71,16 @@ void drive_set(drive_t drive, drive_speed_t drive_speed)
         motor_set_duty_cycle(MOTORS_RIGHT, -duty_cycle);
         break;
     case DRIVE_ARCTURN_LEFT:
+#ifndef BUILD_MCU // TODO: Disabled for MCU atm (float point not allowed)
         motor_set_duty_cycle(MOTORS_LEFT, ARCTURN_DIFF_CONSTANT * duty_cycle);
         motor_set_duty_cycle(MOTORS_RIGHT, duty_cycle);
+#endif
         break;
     case DRIVE_ARCTURN_RIGHT:
+#ifndef BUILD_MCU // TODO: Disabled for MCU atm (float point not allowed)
         motor_set_duty_cycle(MOTORS_LEFT, duty_cycle);
         motor_set_duty_cycle(MOTORS_RIGHT, ARCTURN_DIFF_CONSTANT * duty_cycle);
+#endif
         break;
     }
 }

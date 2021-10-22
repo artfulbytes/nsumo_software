@@ -1,3 +1,4 @@
+#include <opponent_detection.h>
 #include "hw.h"
 #include "state_machine.h"
 #include "trace.h"
@@ -11,10 +12,12 @@ int main(void)
     }
     TRACE_INFO("Booted");
 
-    test_line_detection();
+    //test_state_machine_ir();
+    //test_enemy_detection();
+    //test_line_detection();
     //test_vl53l0x();
     //test_qre1113();
-    //state_machine_run();
+    state_machine_run();
 
     // TODO: Disable everything and endless loop in case of failure
     while (1);
