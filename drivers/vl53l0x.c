@@ -577,7 +577,8 @@ static bool init_address(vl53l0x_idx_t idx)
 
     /* The datasheet doesn't say how long we must wait to leave hw standby,
      * but using the same delay as vl6180x seems to work fine. */
-    __delay_cycles(400);
+    /* TODO: Tune this delay */
+    __delay_cycles(10000);
 
     if (!device_is_booted()) {
         return false;
@@ -645,6 +646,9 @@ static bool init_config(vl53l0x_idx_t idx)
 
 bool vl53l0x_init()
 {
+    /* TODO: Tune this delay (required to make the VL53L0X communication work) */
+    __delay_cycles(5000);
+
     if (!i2c_init()) {
         return false;
     }
@@ -682,6 +686,11 @@ bool vl53l0x_init()
 
 bool vl53l0x_read_range_single(vl53l0x_idx_t idx, uint16_t *range)
 {
+    /* TODO: Start using front left and front right as well */
+    if (idx != VL53L0X_IDX_LEFT && idx != VL53L0X_IDX_FRONT && idx != VL53L0X_IDX_RIGHT) {
+        *range = VL53L0X_OUT_OF_RANGE;
+        return true;
+    }
     i2c_set_slave_address(vl53l0x_infos[idx].addr);
     bool success = i2c_write_addr8_data8(0x80, 0x01);
     success &= i2c_write_addr8_data8(0xFF, 0x01);

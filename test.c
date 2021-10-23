@@ -115,12 +115,16 @@ void test_vl53l0x()
 
 void test_enemy_detection()
 {
+    led_init();
     enemy_detection_init();
     while (1) {
-        if (enemy_detection_get() & ENEMY_DETECTION_FRONT) {
-            trace("FRONT\n");
+        if (
+            (enemy_detection_get() & ENEMY_DETECTION_RIGHT) ||
+            (enemy_detection_get() & ENEMY_DETECTION_FRONT) ||
+            (enemy_detection_get() & ENEMY_DETECTION_LEFT)) {
+            led_set_enable(LED_TEST, true);
         } else {
-            trace("NONE\n");
+            led_set_enable(LED_TEST, false);
         }
     }
 }

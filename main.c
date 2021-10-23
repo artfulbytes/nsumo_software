@@ -7,17 +7,17 @@
 int main(void)
 {
     hw_init();
-    if (!trace_init()) {
-        while (1);
-    }
+    //if (!trace_init()) {
+      //  while (1);
+    //}
     TRACE_INFO("Booted");
 
     //test_state_machine_ir();
-    //test_enemy_detection();
+    test_enemy_detection();
     //test_line_detection();
     //test_vl53l0x();
     //test_qre1113();
-    state_machine_run();
+    //state_machine_run();
 
     // TODO: Disable everything and endless loop in case of failure
     while (1);
