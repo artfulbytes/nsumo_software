@@ -3,7 +3,7 @@
 #include <opponent_detection.h>
 #include "drivers/vl53l0x.h"
 #else /* Simulator */
-#include "NsumoController/nsumo/enemy_detection.h"
+#include "NsumoController/nsumo/opponent_detection.h"
 #include "microcontroller_c_bindings.h"
 #include "NsumoController/voltage_lines.h"
 #endif
@@ -46,11 +46,11 @@ uint8_t enemy_detection_get()
     const bool front_right = ranges.front_right != VL53L0X_OUT_OF_RANGE;
     const bool right = ranges.right <= 300; //!= VL53L0X_OUT_OF_RANGE;
 #else
-    const bool detectedLeft = get_voltage(VOLTAGE_LEFT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;
-    const bool detectedFrontLeft = get_voltage(VOLTAGE_FRONT_LEFT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;
-    const bool detectedFront = get_voltage(VOLTAGE_FRONT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;
-    const bool detectedFrontRight = get_voltage(VOLTAGE_FRONT_RIGHT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;
-    const bool detectedRight = get_voltage(VOLTAGE_RIGHT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;
+    const bool left = get_voltage(VOLTAGE_LEFT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;
+    const bool front_left = get_voltage(VOLTAGE_FRONT_LEFT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;
+    const bool front = get_voltage(VOLTAGE_FRONT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;
+    const bool front_right = get_voltage(VOLTAGE_FRONT_RIGHT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;
+    const bool right = get_voltage(VOLTAGE_RIGHT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;
 #endif
 
     uint8_t enemy_detected = ENEMY_DETECTION_NONE;

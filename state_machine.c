@@ -14,7 +14,7 @@
 #include "NsumoController/voltage_lines.h"
 #include "NsumoController/nsumo/drive.h"
 #include "NsumoController/nsumo/line_detection.h"
-#include "NsumoController/nsumo/enemy_detection.h"
+#include "NsumoController/nsumo/opponent_detection.h"
 #include "NsumoController/nsumo/trace.h"
 #endif
 
@@ -87,10 +87,10 @@ static void set_retreat_drive(retreat_state_t retreat_state)
         drive_stop();
         break;
     case RETREAT_STATE_DRIVE_REVERSE:
-        drive_set(DRIVE_REVERSE, DRIVE_SPEED_FASTEST);
+        drive_set(DRIVE_REVERSE, DRIVE_SPEED_SLOW);
         break;
     case RETREAT_STATE_DRIVE_FORWARD:
-        drive_set(DRIVE_FORWARD, DRIVE_SPEED_FASTEST);
+        drive_set(DRIVE_FORWARD, DRIVE_SPEED_SLOW);
         break;
     case RETREAT_STATE_DRIVE_ROTATE_LEFT:
         drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_SLOW);
@@ -193,6 +193,8 @@ const char *test_state_str(test_state_t test_state)
     return "";
 }
 
+
+#ifdef BUILD_MCU
 /* TODO: Move to new file? */
 static test_state_t current_test_state = TEST_STATE_NONE;
 
@@ -216,7 +218,9 @@ static void handle_test_state(test_state_t test_state)
         break;
     }
 }
+#endif
 
+#ifdef BUILD_MCU
 static main_state_t state_machine_test_run(ir_remote_command_t remote_command)
 {
     test_state_t next_test_state = current_test_state;
@@ -272,6 +276,7 @@ static main_state_t state_machine_test_run(ir_remote_command_t remote_command)
 
     return MAIN_STATE_TEST;
 }
+#endif
 
 static void init()
 {
@@ -280,7 +285,9 @@ static void init()
     // TODO: Uncomment when enemy detection works properly
     //enemy_detection_init();
     line_detection_init();
+#ifdef BUILD_MCU
     ir_remote_init();
+#endif
     drive_init();
 }
 
@@ -311,13 +318,14 @@ void state_machine_run()
         /* TODO: Define all sleep constants as defines! */
         line_detection_t line_detection = line_detection_get();
         // TODO: Retrieve enemy detection here once it works
-        enemy_detection_t enemy_detection = ENEMY_DETECTION_NONE; //enemy_detection_get();
+        enemy_detection_t enemy_detection = enemy_detection_get();
+#ifdef BUILD_MCU
         ir_remote_command_t remote_command = ir_remote_get_command();
         if (remote_command != COMMAND_NONE) {
             drive_stop();
             current_state = next_state = MAIN_STATE_TEST;
         }
-
+#endif
         switch (current_state)
         {
         case MAIN_STATE_SEARCH_1:
@@ -361,7 +369,7 @@ void state_machine_run()
                 break;
             }
             if (enemy_detection & ENEMY_DETECTION_FRONT) {
-                //drive_set(DRIVE_FORWARD, DRIVE_SPEED_FASTEST);
+                drive_set(DRIVE_FORWARD, DRIVE_SPEED_FASTEST);
             } else {
                 drive_stop();
                 next_state = MAIN_STATE_SEARCH_1;
@@ -378,7 +386,9 @@ void state_machine_run()
             /* TODO:Should handle having an enemy and a line detected... */
             break;
         case MAIN_STATE_TEST:
+#ifdef BUILD_MCU
             next_state = state_machine_test_run(remote_command);
+#endif
             break;
         }
 

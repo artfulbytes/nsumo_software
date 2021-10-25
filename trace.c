@@ -14,9 +14,11 @@ bool trace_init()
     if (initialized) {
         return false;
     }
+#ifdef BUILD_MCU
     if (!uart_init()) {
         return false;
     }
+#endif
     initialized = true;
     return true;
 }

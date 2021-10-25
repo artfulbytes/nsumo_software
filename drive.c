@@ -8,10 +8,10 @@
 #endif
 
 #define DUTY_CYCLE_STOP (0)
-#define DUTY_CYCLE_SLOW (50)
-#define DUTY_CYCLE_MEDIUM (50)
-#define DUTY_CYCLE_FAST (50)
-#define DUTY_CYCLE_FASTEST (50)
+#define DUTY_CYCLE_SLOW (20)
+#define DUTY_CYCLE_MEDIUM (40)
+#define DUTY_CYCLE_FAST (70)
+#define DUTY_CYCLE_FASTEST (100)
 
 #define ARCTURN_DIFF_CONSTANT (0.375f)
 
