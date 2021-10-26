@@ -87,10 +87,10 @@ static void set_retreat_drive(retreat_state_t retreat_state)
         drive_stop();
         break;
     case RETREAT_STATE_DRIVE_REVERSE:
-        drive_set(DRIVE_REVERSE, DRIVE_SPEED_SLOW);
+        drive_set(DRIVE_REVERSE, DRIVE_SPEED_MEDIUM);
         break;
     case RETREAT_STATE_DRIVE_FORWARD:
-        drive_set(DRIVE_FORWARD, DRIVE_SPEED_SLOW);
+        drive_set(DRIVE_FORWARD, DRIVE_SPEED_MEDIUM);
         break;
     case RETREAT_STATE_DRIVE_ROTATE_LEFT:
         drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_SLOW);
@@ -283,7 +283,7 @@ static void init()
     /* TODO: Init time here? */
 
     // TODO: Uncomment when enemy detection works properly
-    //enemy_detection_init();
+    enemy_detection_init();
     line_detection_init();
 #ifdef BUILD_MCU
     ir_remote_init();

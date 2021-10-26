@@ -40,11 +40,11 @@ uint8_t enemy_detection_get()
         return ENEMY_DETECTION_NONE;
     }
 
-    const bool left = ranges.left <= 300;//VL53L0X_OUT_OF_RANGE;
+    const bool left = ranges.left <= 100;//VL53L0X_OUT_OF_RANGE;
     const bool front_left = ranges.front_left != VL53L0X_OUT_OF_RANGE;
-    const bool front = ranges.front <= 300; //!= VL53L0X_OUT_OF_RANGE;
+    const bool front = ranges.front <= 100; //!= VL53L0X_OUT_OF_RANGE;
     const bool front_right = ranges.front_right != VL53L0X_OUT_OF_RANGE;
-    const bool right = ranges.right <= 300; //!= VL53L0X_OUT_OF_RANGE;
+    const bool right = ranges.right <= 100; //!= VL53L0X_OUT_OF_RANGE;
 #else
     const bool left = get_voltage(VOLTAGE_LEFT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;
     const bool front_left = get_voltage(VOLTAGE_FRONT_LEFT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;
