@@ -44,7 +44,7 @@ SOURCES = main.c \
           state_machine.c \
           state_machine_ir.c \
           drivers/time.c \
-          enemy_detection.c \
+          opponent_detection.c \
           line_detection.c \
           test.c \
           trace.c \
@@ -58,7 +58,6 @@ OBJECTS = $(patsubst %,$(OBJ_DIR)/%,$(OBJECT_NAMES))
 ###########################################################
 MCU = msp430g2553
 CFLAGS = -mmcu=$(MCU) $(addprefix -I,$(INCLUDE_DIRS)) -DBUILD_MCU -DPRINTF_INCLUDE_CONFIG_H -Og -mmcu=msp430g2553
-
 LDFLAGS = -mmcu=$(MCU) $(addprefix -L,$(LIB_DIRS)) -Wl,--gc-sections
 
 ###########################################################

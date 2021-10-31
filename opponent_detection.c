@@ -1,6 +1,6 @@
 
 #ifdef BUILD_MCU
-#include <opponent_detection.h>
+#include "opponent_detection.h"
 #include "drivers/vl53l0x.h"
 #else /* Simulator */
 #include "NsumoController/nsumo/opponent_detection.h"
@@ -42,7 +42,7 @@ uint8_t enemy_detection_get()
 
     const bool left = ranges.left <= 100;//VL53L0X_OUT_OF_RANGE;
     const bool front_left = ranges.front_left != VL53L0X_OUT_OF_RANGE;
-    const bool front = ranges.front <= 100; //!= VL53L0X_OUT_OF_RANGE;
+    const bool front = ranges.front <= 300; //!= VL53L0X_OUT_OF_RANGE;
     const bool front_right = ranges.front_right != VL53L0X_OUT_OF_RANGE;
     const bool right = ranges.right <= 100; //!= VL53L0X_OUT_OF_RANGE;
 #else

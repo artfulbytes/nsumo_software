@@ -2,8 +2,8 @@
 #ifdef BUILD_MCU
 #include "state_machine.h"
 #include "drive.h"
-#include <opponent_detection.h>
-#include <line_detection.h>
+#include "opponent_detection.h"
+#include "line_detection.h"
 #include "time.h"
 #include "sleep.h"
 #include "trace.h"
@@ -318,13 +318,15 @@ void state_machine_run()
         /* TODO: Define all sleep constants as defines! */
         line_detection_t line_detection = line_detection_get();
         // TODO: Retrieve enemy detection here once it works
-        enemy_detection_t enemy_detection = enemy_detection_get();
 #ifdef BUILD_MCU
+        enemy_detection_t enemy_detection = enemy_detection_get();
         ir_remote_command_t remote_command = ir_remote_get_command();
         if (remote_command != COMMAND_NONE) {
             drive_stop();
             current_state = next_state = MAIN_STATE_TEST;
         }
+#else
+    enemy_detection_t enemy_detection = enemy_detection_get();
 #endif
         switch (current_state)
         {
@@ -339,7 +341,7 @@ void state_machine_run()
                 next_state = MAIN_STATE_SEARCH_2;
                 break;
             }
-            drive_set(DRIVE_ROTATE_RIGHT, DRIVE_SPEED_SLOW);
+            drive_set(DRIVE_ROTATE_RIGHT, DRIVE_SPEED_MEDIUM);
 
             break;
         case MAIN_STATE_SEARCH_2: /* Drive around to find the enemy */

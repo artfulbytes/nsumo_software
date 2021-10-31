@@ -60,14 +60,13 @@ void pwm_set_duty_cycle(pwm_out_t pwm_out, uint16_t duty_cycle_percent)
     }
     /* TODO: We might be off by 1 here, when does the interrupt occur at duty_cycle_percent or
      * at duty_cycle_percent - 1?, shouldn't matter in practice though. */
-    // TODO: Why != vs = below? mistake?
     switch (pwm_out)
     {
     case PWM_OUT_0:
         TA0CCR1 = duty_cycle_percent;
         break;
     case PWM_OUT_1:
-        TA0CCR2 |= duty_cycle_percent;
+        TA0CCR2 = duty_cycle_percent;
         break;
     }
 }
