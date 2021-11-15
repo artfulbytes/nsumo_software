@@ -29,7 +29,7 @@ static const char *drive_str(drive_t drive)
     return "";
 }
 
-static uint32_t get_duty_cycle(drive_speed_t drive_speed)
+static uint16_t get_duty_cycle(drive_speed_t drive_speed)
 {
     switch (drive_speed) {
     case DRIVE_SPEED_SLOW: return DUTY_CYCLE_SLOW;
@@ -49,7 +49,7 @@ void drive_stop()
 void drive_set(drive_t drive, drive_speed_t drive_speed)
 {
     trace("DRIVE %s\n", drive_str(drive));
-    const uint32_t duty_cycle = get_duty_cycle(drive_speed);
+    const int16_t duty_cycle = get_duty_cycle(drive_speed);
     switch (drive)
     {
     case DRIVE_FORWARD:
@@ -70,14 +70,14 @@ void drive_set(drive_t drive, drive_speed_t drive_speed)
         break;
     case DRIVE_ARCTURN_LEFT:
 #ifndef BUILD_MCU // TODO: Disabled for MCU atm (float point not allowed)
-        motor_set_duty_cycle(MOTORS_LEFT, ARCTURN_DIFF_CONSTANT * duty_cycle);
-        motor_set_duty_cycle(MOTORS_RIGHT, duty_cycle);
+     //   motor_set_duty_cycle(MOTORS_LEFT, ARCTURN_DIFF_CONSTANT * duty_cycle);
+     //   motor_set_duty_cycle(MOTORS_RIGHT, duty_cycle);
 #endif
         break;
     case DRIVE_ARCTURN_RIGHT:
 #ifndef BUILD_MCU // TODO: Disabled for MCU atm (float point not allowed)
-        motor_set_duty_cycle(MOTORS_LEFT, duty_cycle);
-        motor_set_duty_cycle(MOTORS_RIGHT, ARCTURN_DIFF_CONSTANT * duty_cycle);
+     //   motor_set_duty_cycle(MOTORS_LEFT, duty_cycle);
+     //   motor_set_duty_cycle(MOTORS_RIGHT, ARCTURN_DIFF_CONSTANT * duty_cycle);
 #endif
         break;
     }
