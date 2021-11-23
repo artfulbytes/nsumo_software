@@ -8,13 +8,14 @@
 #include "trace.h"
 
 #define DUTY_CYCLE_STOP (0)
-#define DUTY_CYCLE_SLOW (20)
-#define DUTY_CYCLE_MEDIUM (30)
-#define DUTY_CYCLE_FAST (40)
-#define DUTY_CYCLE_FASTEST (50)
+#define DUTY_CYCLE_SLOW (25)
+#define DUTY_CYCLE_MEDIUM (33)
+#define DUTY_CYCLE_FAST (50)
+#define DUTY_CYCLE_FASTEST (67)
 
 #define ARCTURN_DIFF_CONSTANT (0.375f)
 
+#if 0
 static const char *drive_str(drive_t drive)
 {
     switch (drive)
@@ -28,6 +29,7 @@ static const char *drive_str(drive_t drive)
     }
     return "";
 }
+#endif
 
 static uint16_t get_duty_cycle(drive_speed_t drive_speed)
 {
@@ -48,7 +50,6 @@ void drive_stop()
 
 void drive_set(drive_t drive, drive_speed_t drive_speed)
 {
-    trace("DRIVE %s\n", drive_str(drive));
     const int16_t duty_cycle = get_duty_cycle(drive_speed);
     switch (drive)
     {

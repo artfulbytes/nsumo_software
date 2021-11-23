@@ -90,7 +90,7 @@ static robot_state_t handle_forward_command()
         motor_stop_safely();
     }
     motor_set_duty_cycle(MOTORS_LEFT, current_speed);
-    motor_set_duty_cycle(MOTORS_RIGHT, current_speed);
+    motor_set_duty_cycle(MOTORS_RIGHT, current_speed /2);
     return STATE_FORWARD;
 }
 
@@ -143,7 +143,7 @@ static void handle_speed_command(robot_command_t speed_command)
         break;
     case STATE_FORWARD:
         motor_set_duty_cycle(MOTORS_LEFT, new_speed);
-        motor_set_duty_cycle(MOTORS_RIGHT, new_speed);
+        motor_set_duty_cycle(MOTORS_RIGHT, new_speed / 2);
         break;
     case STATE_REVERSE:
         motor_set_duty_cycle(MOTORS_LEFT, -new_speed);

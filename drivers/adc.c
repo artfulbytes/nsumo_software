@@ -54,7 +54,6 @@ void adc_init(adc_conf_t* adc_conf)
 
 void __attribute__ ((interrupt(ADC10_VECTOR))) adc_isr (void)
 {
-    ADC10CTL0 &= ~ENC;
     for (int chnl = 0; chnl < ADC_CHANNEL_CNT; chnl++) {
         if (adc_channel_enabled[chnl]) {
             /* The ADC10 DTC writes the channel sample values in opposite order */
@@ -66,12 +65,14 @@ void __attribute__ ((interrupt(ADC10_VECTOR))) adc_isr (void)
 
 void adc_read(adc_values_t values)
 {
-    /* Disable ADC interrupt while retrieving the values */
-    ADC10CTL0 &= ~ADC10IE;
+    /* Disable global interrupt while retrieving the values.
+     * If we only disable the ADC interrupt, the conversion and trigger
+     * stops working after a while for unknown reason. */
+    __disable_interrupt();
     for (int chnl = 0; chnl < ADC_CHANNEL_CNT; chnl++) {
         if (adc_channel_enabled[chnl]) {
             values[chnl] = copied_adc_values[chnl];
         }
     }
-    ADC10CTL0 |= ADC10IE;
+    __enable_interrupt();
 }
