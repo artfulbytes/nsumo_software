@@ -1,9 +1,9 @@
 
 #ifdef BUILD_MCU
-#include "opponent_detection.h"
+#include "enemy_detection.h"
 #include "drivers/vl53l0x.h"
 #else /* Simulator */
-#include "NsumoController/nsumo/opponent_detection.h"
+#include "NsumoController/nsumo/enemy_detection.h"
 #include "microcontroller_c_bindings.h"
 #include "NsumoController/voltage_lines.h"
 #endif

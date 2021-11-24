@@ -12,7 +12,7 @@
 #include "qre1113.h"
 #include "trace.h"
 #include "line_detection.h"
-#include "opponent_detection.h"
+#include "enemy_detection.h"
 
 void test_dimming_led()
 {

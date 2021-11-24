@@ -1,7 +1,7 @@
 #ifdef BUILD_MCU
 #include "state_machine.h"
 #include "drive.h"
-#include "opponent_detection.h"
+#include "enemy_detection.h"
 #include "line_detection.h"
 #include "time.h"
 #include "sleep.h"
@@ -13,7 +13,7 @@
 #include "NsumoController/voltage_lines.h"
 #include "NsumoController/nsumo/drive.h"
 #include "NsumoController/nsumo/line_detection.h"
-#include "NsumoController/nsumo/opponent_detection.h"
+#include "NsumoController/nsumo/enemy_detection.h"
 #include "NsumoController/nsumo/trace.h"
 #endif
 

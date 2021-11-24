@@ -44,7 +44,7 @@ SOURCES = main.c \
           state_machine.c \
           state_machine_ir.c \
           drivers/time.c \
-          opponent_detection.c \
+          enemy_detection.c \
           line_detection.c \
           test.c \
           trace.c \
