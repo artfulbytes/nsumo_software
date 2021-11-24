@@ -270,7 +270,7 @@ bool i2c_init()
     UCB0CTL1 |= UCSWRST; /* Enable SW reset */
     UCB0CTL0 = UCMST + UCSYNC + UCMODE_3; /* Single master, synchronous mode, I2C mode */
     UCB0CTL1 |= UCSSEL_2; /* SMCLK */
-    UCB0BR0 = 10; /* SMCLK / 10 = ~100kHz */
+    UCB0BR0 = 160; /* SMCLK / 160 = ~100kHz */
     UCB0BR1 = 0;
     UCB0CTL1 &= ~UCSWRST; /* Clear SW */
     i2c_set_slave_address(DEFAULT_SLAVE_ADDRESS);

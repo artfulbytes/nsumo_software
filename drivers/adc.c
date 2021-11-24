@@ -52,6 +52,8 @@ void adc_init(adc_conf_t* adc_conf)
     initialized = true;
 }
 
+static uint32_t total_sample_cnt = 0;
+
 void __attribute__ ((interrupt(ADC10_VECTOR))) adc_isr (void)
 {
     for (int chnl = 0; chnl < ADC_CHANNEL_CNT; chnl++) {
@@ -61,6 +63,15 @@ void __attribute__ ((interrupt(ADC10_VECTOR))) adc_isr (void)
         }
     }
     ADC10CTL0 |= ENC + ADC10SC;
+    total_sample_cnt++;
+}
+
+uint32_t adc_total_sample_cnt()
+{
+    __disable_interrupt();
+    const uint32_t count = total_sample_cnt;
+    __enable_interrupt();
+    return count;
 }
 
 void adc_read(adc_values_t values)

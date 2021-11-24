@@ -24,5 +24,6 @@ typedef uint16_t adc_values_t[ADC_CHANNEL_CNT];
 
 void adc_init(adc_conf_t* conf);
 void adc_read(adc_values_t values);
+uint32_t adc_total_sample_cnt(void);
 
 #endif /* ADC_H */

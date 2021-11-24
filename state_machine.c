@@ -97,12 +97,12 @@ const char *test_state_str(test_state_t test_state)
 static uint32_t search_state_start_time = 0;
 static void search_timer_start()
 {
-    search_state_start_time = time_ms();
+    search_state_start_time = millis();
 }
 
 static uint32_t search_timer_passed()
 {
-    return time_ms() - search_state_start_time;
+    return millis() - search_state_start_time;
 }
 
 #define SEARCH_STATE_ROTATE_TIMEOUT (1000)
@@ -200,12 +200,12 @@ static void set_retreat_drive(retreat_state_t retreat_state)
 static uint32_t retreat_state_start_time = 0;
 static void retreat_timer_start()
 {
-    retreat_state_start_time = time_ms();
+    retreat_state_start_time = millis();
 }
 
 static bool is_retreat_state_done(retreat_state_t retreat_state)
 {
-    return (time_ms() - retreat_state_start_time) >= retreat_state_timeouts[retreat_state];
+    return (millis() - retreat_state_start_time) >= retreat_state_timeouts[retreat_state];
 }
 
 static main_state_t state_machine_retreat_run(bool new_entry)

@@ -59,7 +59,6 @@ void test_adc()
 
 void test_qre1113()
 {
-    led_init();
     qre1113_init();
     qre1113_voltages_t voltages = {0};
     while (1) {
@@ -70,7 +69,24 @@ void test_qre1113()
               "Line sensor back right %d\n",
               voltages.front_left, voltages.front_right,
               voltages.back_left, voltages.back_right);
-        __delay_cycles(500000);
+        __delay_cycles(50000);
+    }
+}
+
+void test_qre1113_time()
+{
+    qre1113_init();
+    qre1113_voltages_t voltages = {0};
+    uint32_t last_sample_cnt = adc_total_sample_cnt();
+    uint32_t last_millis = millis();
+    while (1) {
+        uint32_t sample_cnt = adc_total_sample_cnt();
+        if (sample_cnt - last_sample_cnt >= 100) {
+            trace("%d samples in %d ms\n", sample_cnt - last_sample_cnt, millis() - last_millis);
+            last_sample_cnt = sample_cnt;
+            last_millis = millis();
+        }
+        __delay_cycles(50000);
     }
 }
 
@@ -83,34 +99,40 @@ void test_line_detection()
     }
 }
 
-typedef struct ranges
-{
-     uint16_t left;
-     uint16_t front_left;
-     uint16_t front;
-     uint16_t front_right;
-     uint16_t right;
-} ranges_t;
-
 void test_vl53l0x()
 {
-    ranges_t ranges;
+    vl53l0x_ranges_t ranges;
     bool success = vl53l0x_init();
     while (success) {
-        success = vl53l0x_read_range_single(VL53L0X_IDX_FRONT, &ranges.front);
-        success &= vl53l0x_read_range_single(VL53L0X_IDX_LEFT, &ranges.left);
-        success &= vl53l0x_read_range_single(VL53L0X_IDX_RIGHT, &ranges.right);
-        success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_LEFT, &ranges.front_left);
-        success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_RIGHT, &ranges.front_right);
+        success = vl53l0x_read_range_single(VL53L0X_IDX_FRONT, &ranges[VL53L0X_IDX_FRONT]);
+        success &= vl53l0x_read_range_single(VL53L0X_IDX_LEFT, &ranges[VL53L0X_IDX_LEFT]);
+        success &= vl53l0x_read_range_single(VL53L0X_IDX_RIGHT, &ranges[VL53L0X_IDX_RIGHT]);
+        success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_LEFT, &ranges[VL53L0X_IDX_FRONT_LEFT]);
+        success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_RIGHT, &ranges[VL53L0X_IDX_FRONT_RIGHT]);
         trace("Range sensor left %d\n"
               "Range sensor right %d\n"
               "Range sensor front left %d\n"
               "Range sensor front %d\n"
               "Range sensor front right %d\n",
-              ranges.left, ranges.right,
-              ranges.front_left, ranges.front,
-              ranges.front_right);
-        __delay_cycles(500000);
+              ranges[VL53L0X_IDX_LEFT], ranges[VL53L0X_IDX_RIGHT],
+              ranges[VL53L0X_IDX_FRONT_LEFT], ranges[VL53L0X_IDX_FRONT],
+              ranges[VL53L0X_IDX_FRONT_RIGHT]);
+    }
+}
+
+void test_vl53l0x_multiple_time()
+{
+    vl53l0x_ranges_t ranges;
+    bool success = vl53l0x_init();
+    int measure_cnt = 0;
+    uint32_t last_millis = millis();
+    while (success) {
+        success = vl53l0x_read_range_multiple(ranges);
+        measure_cnt++;
+        if (!(measure_cnt % 100)) {
+            trace("100 measures in %d ms\n", millis()-last_millis);
+            last_millis = millis();
+        }
     }
 }
 

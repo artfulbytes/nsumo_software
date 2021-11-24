@@ -58,7 +58,7 @@ void time_init()
     TACCR0 = 65000; // interrupt after 65ms
 }
 
-volatile uint32_t watchdog_interrupt_cnt = 0;
+volatile static uint32_t watchdog_interrupt_cnt = 0;
 /* This is how GCC interrupts are declared (#pragma vector=WDT_VECTOR is for
  * TI compiler) */
 void watchdog_timer(void) __attribute__ ((interrupt (WDT_VECTOR)));
@@ -68,7 +68,7 @@ void watchdog_timer(void)
 }
 
 /* TODO: Move watchdog timer handling to separate file? */
-uint32_t time_ms()
+uint32_t millis()
 {
     /* Disable interrupts while retrieving the counter */
     IE1 &= ~WDTIE;

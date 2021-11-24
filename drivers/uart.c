@@ -6,6 +6,9 @@
 
 static bool initialized = false;
 
+#define UCA0BR0_9600HZ_AT_16MHZ (1666 & 0xFF)
+#define UCA0BR1_9600HZ_AT_16MHZ (1666 >> 8)
+
 bool uart_init(void)
 {
     if (initialized) {
@@ -17,11 +20,11 @@ bool uart_init(void)
         UCA0CTL1 |= UCSSEL_2;
         /* Configure baud rate to 9600 as it's the maximum baud rate the Launchpad allows.
          * Values are picked from the table in the family user guide (SLAU144).
-         * PRESCALER = UCAxBR0 + (UCAxBR1 * 256) = 104 + 0 = 104
+         * PRESCALER = UCAxBR0 + (UCAxBR1 * 256)
          * 1 MHZ / PRESCALER ~≃ 9600
          * 8-bit, no parity bit and one stop bit. */
-        UCA0BR0 = 104;
-        UCA0BR1 = 0;
+        UCA0BR0 = UCA0BR0_9600HZ_AT_16MHZ;
+        UCA0BR1 = UCA0BR1_9600HZ_AT_16MHZ;
         UCA0MCTL = UCBRS0;
 
         /* Reset the USCI */

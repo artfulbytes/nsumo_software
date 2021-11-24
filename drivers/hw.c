@@ -23,11 +23,14 @@ static void stop_watchdog()
     WDTCTL = WDTPW | WDTHOLD;
 }
 
+// 16 MHZ / 32768 = ~2000 Hz
+#define WDT_MDLY_0_5_16MHZ (WDTPW+WDTTMSEL+WDTCNTCL+WDTIS0)
+
 static void setup_watchdog_interrupt()
 {
     /* Since we don't need the watchdog for reset, we use it to
      * count the time elapsed instead */
-    WDTCTL = WDT_MDLY_0_5;
+    WDTCTL = WDT_MDLY_0_5_16MHZ;
     IE1 |= WDTIE;
 }
 

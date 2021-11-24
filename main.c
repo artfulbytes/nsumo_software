@@ -16,8 +16,9 @@ int main(void)
     //test_enemy_detection();
     //test_line_detection();
     //test_vl53l0x();
-    //test_qre1113();
-    state_machine_run();
+    //test_vl53l0x_multiple();
+    test_qre1113();
+    //state_machine_run();
     //test_state_machine_ir();
     // TODO: Disable everything and endless loop in case of failure
     while (1);

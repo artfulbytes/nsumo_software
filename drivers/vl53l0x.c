@@ -684,7 +684,7 @@ bool vl53l0x_init()
     return true;
 }
 
-bool vl53l0x_read_range_single(vl53l0x_idx_t idx, uint16_t *range)
+static bool start_sysrange(vl53l0x_idx_t idx)
 {
     i2c_set_slave_address(vl53l0x_infos[idx].addr);
     bool success = i2c_write_addr8_data8(0x80, 0x01);
@@ -706,10 +706,13 @@ bool vl53l0x_read_range_single(vl53l0x_idx_t idx, uint16_t *range)
     do {
         success = i2c_read_addr8_data8(REG_SYSRANGE_START, &sysrange_start);
     } while (success && (sysrange_start & 0x01));
-    if (!success) {
-        return false;
-    }
+    return success;
+}
 
+static bool read_range(vl53l0x_idx_t idx, uint16_t *range)
+{
+    bool success = false;
+    i2c_set_slave_address(vl53l0x_infos[idx].addr);
     uint8_t interrupt_status = 0;
     do {
         success = i2c_read_addr8_data8(REG_RESULT_INTERRUPT_STATUS, &interrupt_status);
@@ -732,4 +735,51 @@ bool vl53l0x_read_range_single(vl53l0x_idx_t idx, uint16_t *range)
     }
 
     return true;
+}
+
+bool vl53l0x_read_range_single(vl53l0x_idx_t idx, uint16_t *range)
+{
+    if (!start_sysrange(idx)) {
+        return false;
+    }
+    return read_range(idx, range);
+}
+
+bool vl53l0x_read_range_multiple(vl53l0x_ranges_t ranges)
+{
+    bool success = false;
+#ifdef VL53L0X_FRONT
+    success = start_sysrange(VL53L0X_IDX_FRONT);
+#endif
+#ifdef VL53L0X_LEFT
+    success &= start_sysrange(VL53L0X_IDX_LEFT);
+#endif
+#ifdef VL53L0X_RIGHT
+    success &= start_sysrange(VL53L0X_IDX_RIGHT);
+#endif
+#ifdef VL53L0X_FRONT_LEFT
+    success &= start_sysrange(VL53L0X_IDX_FRONT_LEFT);
+#endif
+#ifdef VL53L0X_FRONT_RIGHT
+    success &= start_sysrange(VL53L0X_IDX_FRONT_RIGHT);
+#endif
+    if (!success) {
+        return false;
+    }
+#ifdef VL53L0X_FRONT
+    success = vl53l0x_read_range_single(VL53L0X_IDX_FRONT, &ranges[VL53L0X_IDX_FRONT]);
+#endif
+#ifdef VL53L0X_LEFT
+    success &= vl53l0x_read_range_single(VL53L0X_IDX_LEFT, &ranges[VL53L0X_IDX_LEFT]);
+#endif
+#ifdef VL53L0X_RIGHT
+    success &= vl53l0x_read_range_single(VL53L0X_IDX_RIGHT, &ranges[VL53L0X_IDX_RIGHT]);
+#endif
+#ifdef VL53L0X_FRONT_LEFT
+    success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_LEFT, &ranges[VL53L0X_IDX_FRONT_LEFT]);
+#endif
+#ifdef VL53L0X_FRONT_RIGHT
+    success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_RIGHT, &ranges[VL53L0X_IDX_FRONT_RIGHT]);
+#endif
+    return success;
 }
