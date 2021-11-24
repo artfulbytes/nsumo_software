@@ -13,6 +13,7 @@
 #include "trace.h"
 #include "line_detection.h"
 #include "enemy_detection.h"
+#include "drive.h"
 
 void test_dimming_led()
 {
@@ -156,5 +157,39 @@ void test_state_machine_ir()
         led_set_enable(LED_TEST, show_led);
         show_led = !show_led;
         __delay_cycles(50000);
+    }
+}
+
+void test_drive_and_line_detect()
+{
+    line_detection_init();
+    drive_init();
+
+    const drive_speed_t speed = DRIVE_SPEED_MEDIUM;
+    drive_t current_drive = DRIVE_FORWARD;
+    drive_set(current_drive, speed);
+    while (1) {
+        drive_t new_drive = current_drive;
+        switch (line_detection_get()) {
+        case LINE_DETECTION_FRONT:
+        case LINE_DETECTION_FRONT_LEFT:
+        case LINE_DETECTION_FRONT_RIGHT:
+            new_drive = DRIVE_REVERSE;
+            break;
+        case LINE_DETECTION_BACK:
+        case LINE_DETECTION_BACK_LEFT:
+        case LINE_DETECTION_BACK_RIGHT:
+            new_drive = DRIVE_FORWARD;
+            break;
+        case LINE_DETECTION_NONE:
+        case LINE_DETECTION_LEFT:
+        case LINE_DETECTION_RIGHT:
+            break;
+        }
+
+        if (new_drive != current_drive) {
+            drive_set(new_drive, speed);
+            current_drive = new_drive;
+        }
     }
 }
