@@ -3,30 +3,27 @@
 #include "uart.h"
 #include <msp430.h>
 
-static void hw_init_clocks()
+static void init_clocks()
 {
-    /*
-    * Sanity chcking that constant not removed
-        - if (CALBC1_1MHZ==0xFF)                    // If calibration constant erased
-          {
-              while(1);                               // do not load, trap CPU!!
-          }
-    */
+    /* Sanity check calibration data not erased */
+    if (CALBC1_1MHZ == 0xFF || CALBC1_16MHZ == 0xFF) {
+        while(1);
+    }
 
-    /* SMCLK = 1MHz */
-    BCSCTL1 = CALBC1_1MHZ; // Basic Clock System Control 1
-    DCOCTL = CALDCO_1MHZ;  // DCO Clock Frequency Control
+    /* SMCLK = 16MHz */
+    BCSCTL1 = CALBC1_16MHZ; // Basic Clock System Control 1
+    DCOCTL = CALDCO_16MHZ;  // DCO Clock Frequency Control
 
     /* ACLK with VLOCLK */
     BCSCTL3 = LFXT1S_2;
 }
 
-static void hw_stop_watchdog()
+static void stop_watchdog()
 {
     WDTCTL = WDTPW | WDTHOLD;
 }
 
-static void hw_setup_watchdog_interrupt()
+static void setup_watchdog_interrupt()
 {
     /* Since we don't need the watchdog for reset, we use it to
      * count the time elapsed instead */
@@ -34,16 +31,16 @@ static void hw_setup_watchdog_interrupt()
     IE1 |= WDTIE;
 }
 
-static void hw_enable_global_interrupts()
+static void enable_global_interrupts()
 {
     _enable_interrupts();
 }
 
 void hw_init()
 {
-    hw_stop_watchdog();
-    hw_setup_watchdog_interrupt();
-    hw_init_clocks();
+    stop_watchdog();
+    setup_watchdog_interrupt();
+    init_clocks();
     gpio_init();
-    hw_enable_global_interrupts();
+    enable_global_interrupts();
 }
