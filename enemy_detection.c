@@ -15,36 +15,22 @@
 #define MAX_VOLTAGE_RANGE_SENSOR (1.0f)
 #endif
 
-#ifdef BUILD_MCU
-typedef struct ranges
-{
-     uint16_t left;
-     uint16_t front_left;
-     uint16_t front;
-     uint16_t front_right;
-     uint16_t right;
-} ranges_t;
-#endif
+#define DETECT_THRESHOLD (400)
 
 uint8_t enemy_detection_get()
 {
 #ifdef BUILD_MCU
-    ranges_t ranges;
-    bool success = false;
-    success = vl53l0x_read_range_single(VL53L0X_IDX_FRONT, &ranges.front);
-    success &= vl53l0x_read_range_single(VL53L0X_IDX_LEFT, &ranges.left);
-    success &= vl53l0x_read_range_single(VL53L0X_IDX_RIGHT, &ranges.right);
-    success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_LEFT, &ranges.front_left);
-    success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_RIGHT, &ranges.front_right);
+    vl53l0x_ranges_t ranges;
+    bool success = vl53l0x_read_range_multiple(ranges);
     if (!success) {
         return ENEMY_DETECTION_NONE;
     }
 
-    const bool left = ranges.left <= 100;//VL53L0X_OUT_OF_RANGE;
-    const bool front_left = ranges.front_left != VL53L0X_OUT_OF_RANGE;
-    const bool front = ranges.front <= 300; //!= VL53L0X_OUT_OF_RANGE;
-    const bool front_right = ranges.front_right != VL53L0X_OUT_OF_RANGE;
-    const bool right = ranges.right <= 100; //!= VL53L0X_OUT_OF_RANGE;
+    const bool left = ranges[VL53L0X_IDX_LEFT] <= DETECT_THRESHOLD;
+    const bool front_left = ranges[VL53L0X_IDX_FRONT_LEFT] <= DETECT_THRESHOLD;
+    const bool front = ranges[VL53L0X_IDX_FRONT] <= DETECT_THRESHOLD;
+    const bool front_right = ranges[VL53L0X_IDX_FRONT_RIGHT] <= DETECT_THRESHOLD;
+    const bool right = ranges[VL53L0X_IDX_RIGHT] <= DETECT_THRESHOLD;
 #else
     const bool left = get_voltage(VOLTAGE_LEFT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;
     const bool front_left = get_voltage(VOLTAGE_FRONT_LEFT_RANGE_SENSOR) < MAX_VOLTAGE_RANGE_SENSOR;

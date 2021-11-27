@@ -10,8 +10,8 @@
 #define DUTY_CYCLE_STOP (0)
 #define DUTY_CYCLE_SLOW (25)
 #define DUTY_CYCLE_MEDIUM (33)
-#define DUTY_CYCLE_FAST (50)
-#define DUTY_CYCLE_FASTEST (67)
+#define DUTY_CYCLE_FAST (60)
+#define DUTY_CYCLE_FASTEST (80) // fastest we can go without going out of dohyo
 
 #define ARCTURN_DIFF_CONSTANT (0.375f)
 

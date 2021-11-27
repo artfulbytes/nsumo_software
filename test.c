@@ -1,4 +1,10 @@
 #include "test.h"
+#include "line_detection.h"
+#include "enemy_detection.h"
+#include "drive.h"
+#include "trace.h"
+
+#if BUILD_MCU
 #include "motor.h"
 #include "adc.h"
 #include "pwm.h"
@@ -10,10 +16,6 @@
 #include "vl53l0x.h"
 #include "led.h"
 #include "qre1113.h"
-#include "trace.h"
-#include "line_detection.h"
-#include "enemy_detection.h"
-#include "drive.h"
 
 void test_dimming_led()
 {
@@ -76,7 +78,6 @@ void test_qre1113()
 void test_qre1113_time()
 {
     qre1113_init();
-    qre1113_voltages_t voltages = {0};
     uint32_t last_sample_cnt = adc_total_sample_cnt();
     uint32_t last_millis = millis();
     while (1) {
@@ -87,15 +88,6 @@ void test_qre1113_time()
             last_millis = millis();
         }
         __delay_cycles(50000);
-    }
-}
-
-void test_line_detection()
-{
-    line_detection_init();
-    while (1) {
-        line_detection_t line_detection = line_detection_get();
-        trace("%s\n", line_detection_enum_to_str(line_detection));
     }
 }
 
@@ -136,22 +128,6 @@ void test_vl53l0x_multiple_time()
     }
 }
 
-void test_enemy_detection()
-{
-    led_init();
-    enemy_detection_init();
-    while (1) {
-        if (
-            (enemy_detection_get() & ENEMY_DETECTION_RIGHT) ||
-            (enemy_detection_get() & ENEMY_DETECTION_FRONT) ||
-            (enemy_detection_get() & ENEMY_DETECTION_LEFT)) {
-            led_set_enable(LED_TEST, true);
-        } else {
-            led_set_enable(LED_TEST, false);
-        }
-    }
-}
-
 void test_ir_receiver()
 {
     ir_remote_init();
@@ -182,12 +158,39 @@ void test_state_machine_ir()
     }
 }
 
+void test_enemy_detection()
+{
+    led_init();
+    enemy_detection_init();
+    while (1) {
+        if (
+            (enemy_detection_get() & ENEMY_DETECTION_RIGHT) ||
+            (enemy_detection_get() & ENEMY_DETECTION_FRONT) ||
+            (enemy_detection_get() & ENEMY_DETECTION_LEFT)) {
+            led_set_enable(LED_TEST, true);
+        } else {
+            led_set_enable(LED_TEST, false);
+        }
+    }
+}
+
+#endif
+
+void test_line_detection()
+{
+    line_detection_init();
+    while (1) {
+        line_detection_t line_detection = line_detection_get();
+        trace("%s\n", line_detection_enum_to_str(line_detection));
+    }
+}
+
 void test_drive_and_line_detect()
 {
     line_detection_init();
     drive_init();
 
-    const drive_speed_t speed = DRIVE_SPEED_MEDIUM;
+    const drive_speed_t speed = DRIVE_SPEED_FASTEST;
     drive_t current_drive = DRIVE_FORWARD;
     drive_set(current_drive, speed);
     while (1) {
@@ -214,4 +217,26 @@ void test_drive_and_line_detect()
             current_drive = new_drive;
         }
     }
+}
+
+void test_rotate_and_enemy_detect()
+{
+    enemy_detection_init();
+    drive_init();
+
+    bool rotate = false;
+    bool new_rotate = false;
+    while (1) {
+        new_rotate = !(enemy_detection_get() & (ENEMY_DETECTION_FRONT));// | ENEMY_DETECTION_FRONT_RIGHT | ENEMY_DETECTION_FRONT_LEFT));
+
+        if (new_rotate != rotate) {
+            if (new_rotate) {
+                drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_FAST);
+            } else {
+                drive_stop();
+            }
+            rotate = new_rotate;
+        }
+    }
+
 }
