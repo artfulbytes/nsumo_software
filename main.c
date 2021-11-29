@@ -17,9 +17,11 @@ int main(void)
     //test_line_detection();
     //test_vl53l0x();
     //test_vl53l0x_multiple();
+    test_vl53l0x_multiple_time();
     //test_qre1113();
     //test_drive_and_line_detect();
-    test_rotate_and_enemy_detect();
+    //test_rotate_and_enemy_detect();
+    //test_gpio_input();
     //state_machine_run();
     //test_state_machine_ir();
     // TODO: Disable everything and endless loop in case of failure

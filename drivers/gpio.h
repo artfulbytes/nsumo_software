@@ -64,6 +64,7 @@ typedef enum {
     GPIO_INPUT
 } gpio_dir_t;
 
+/* For input this selects pull-up / pull-down if resistor enabled */
 typedef enum {
     GPIO_LOW,
     GPIO_HIGH

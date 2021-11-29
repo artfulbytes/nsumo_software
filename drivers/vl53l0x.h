@@ -15,21 +15,11 @@
 
 typedef enum
 {
-#ifdef VL53L0X_FRONT
     VL53L0X_IDX_FRONT,
-#endif
-#ifdef VL53L0X_LEFT
     VL53L0X_IDX_LEFT,
-#endif
-#ifdef VL53L0X_RIGHT
     VL53L0X_IDX_RIGHT,
-#endif
-#ifdef VL53L0X_FRONT_LEFT
     VL53L0X_IDX_FRONT_LEFT,
-#endif
-#ifdef VL53L0X_FRONT_RIGHT
     VL53L0X_IDX_FRONT_RIGHT,
-#endif
     VL53L0X_IDX_COUNT
 } vl53l0x_idx_t;
 
@@ -61,5 +51,8 @@ bool vl53l0x_read_range_single(vl53l0x_idx_t idx, uint16_t *range);
  * @note   Polling
  */
 bool vl53l0x_read_range_multiple(vl53l0x_ranges_t ranges);
+
+bool vl53l0x_start_sysrange(vl53l0x_idx_t idx);
+bool vl53l0x_wait_sysrange(vl53l0x_idx_t idx);
 
 #endif /* VL53L0X_H */

@@ -14,6 +14,7 @@ void test_vl53l0x_multiple_time(void);
 void test_qre1113(void);
 void test_qre1113_time(void);
 void test_enemy_detection(void);
+void test_gpio_input(void);
 #endif
 void test_line_detection(void);
 void test_drive_and_line_detect(void);

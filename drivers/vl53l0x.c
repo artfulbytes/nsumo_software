@@ -432,6 +432,36 @@ static bool configure_interrupt()
     return true;
 }
 
+#ifdef VL53L0X_FRONT
+typedef enum
+{
+    STATUS_MULTIPLE_NOT_STARTED,
+    STATUS_MULTIPLE_MEASURING,
+    STATUS_MULTIPLE_DONE
+} status_multiple_t;
+
+/* Reads/Writes to this can be considered atomic on MSP430 */
+static volatile status_multiple_t status_multiple = STATUS_MULTIPLE_NOT_STARTED;
+static void front_measurement_done_isr()
+{
+    status_multiple = STATUS_MULTIPLE_DONE;
+}
+
+static void configure_front_sensor_interrupt()
+{
+    const gpio_config_t gpio_config = {
+        .gpio = GPIO_RANGE_SENSOR_FRONT_INT,
+        .dir = GPIO_INPUT,
+        .out = GPIO_LOW,
+        .resistor = RESISTOR_ENABLED,
+        .selection = GPIO_SEL_GPIO
+    };
+    gpio_configure(&gpio_config);
+    gpio_enable_interrupt(GPIO_RANGE_SENSOR_FRONT_INT);
+    gpio_set_interrupt_trigger(GPIO_RANGE_SENSOR_FRONT_INT, TRIGGER_FALLING);
+    gpio_register_isr(GPIO_RANGE_SENSOR_FRONT_INT, front_measurement_done_isr);
+}
+#endif
 
 /**
  * Enable (or disable) specific steps in the sequence
@@ -641,6 +671,11 @@ static bool init_config(vl53l0x_idx_t idx)
     if (!perform_ref_calibration()) {
         return false;
     }
+#ifdef VL53L0X_FRONT
+    if (idx == VL53L0X_IDX_FRONT) {
+        configure_front_sensor_interrupt();
+    }
+#endif
     return true;
 }
 
@@ -709,15 +744,29 @@ static bool start_sysrange(vl53l0x_idx_t idx)
     return success;
 }
 
-static bool read_range(vl53l0x_idx_t idx, uint16_t *range)
+/* Assumes I2C address is set already */
+static bool clear_sysrange_interrupt()
+{
+    return i2c_write_addr8_data8(REG_SYSTEM_INTERRUPT_CLEAR, 0x01);
+}
+
+/* Assumes I2C address is set already */
+static bool pollwait_sysrange()
 {
     bool success = false;
-    i2c_set_slave_address(vl53l0x_infos[idx].addr);
     uint8_t interrupt_status = 0;
     do {
         success = i2c_read_addr8_data8(REG_RESULT_INTERRUPT_STATUS, &interrupt_status);
     } while (success && ((interrupt_status & 0x07) == 0));
-    if (!success) {
+    return success;
+}
+
+static bool read_range(vl53l0x_idx_t idx, uint16_t *range)
+{
+    bool success = false;
+    i2c_set_slave_address(vl53l0x_infos[idx].addr);
+
+    if (!pollwait_sysrange()) {
         return false;
     }
 
@@ -734,7 +783,8 @@ static bool read_range(vl53l0x_idx_t idx, uint16_t *range)
         *range = VL53L0X_OUT_OF_RANGE;
     }
 
-    return true;
+    success = clear_sysrange_interrupt();
+    return success;
 }
 
 bool vl53l0x_read_range_single(vl53l0x_idx_t idx, uint16_t *range)
@@ -745,11 +795,12 @@ bool vl53l0x_read_range_single(vl53l0x_idx_t idx, uint16_t *range)
     return read_range(idx, range);
 }
 
-bool vl53l0x_read_range_multiple(vl53l0x_ranges_t ranges)
+static bool start_sysrange_multiple()
 {
-    bool success = false;
+    bool success = true;
 #ifdef VL53L0X_FRONT
-    success = start_sysrange(VL53L0X_IDX_FRONT);
+    status_multiple = STATUS_MULTIPLE_MEASURING;
+    success &= start_sysrange(VL53L0X_IDX_FRONT);
 #endif
 #ifdef VL53L0X_LEFT
     success &= start_sysrange(VL53L0X_IDX_LEFT);
@@ -763,23 +814,65 @@ bool vl53l0x_read_range_multiple(vl53l0x_ranges_t ranges)
 #ifdef VL53L0X_FRONT_RIGHT
     success &= start_sysrange(VL53L0X_IDX_FRONT_RIGHT);
 #endif
-    if (!success) {
-        return false;
-    }
+    return success;
+}
+
+static vl53l0x_ranges_t latest_ranges = { VL53L0X_OUT_OF_RANGE };
+
+/*
+ * The approach is as follow:
+ * For multiple sensors and single interrupt line:
+ * 1. Start measure on all sensors
+ * 2. If measurement ready
+ *    - Read measurement of all sensors
+ * 3. else
+ *    - Return old values
+ * 4. Update measurement ready on interrupt
+ */
+bool vl53l0x_read_range_multiple(vl53l0x_ranges_t ranges)
+{
 #ifdef VL53L0X_FRONT
-    success = vl53l0x_read_range_single(VL53L0X_IDX_FRONT, &ranges[VL53L0X_IDX_FRONT]);
+    if (status_multiple == STATUS_MULTIPLE_NOT_STARTED) {
+#endif
+        if (!start_sysrange_multiple()) {
+            return false;
+        }
+#ifdef VL53L0X_FRONT
+        /* Block here the first time */
+        while (status_multiple != STATUS_MULTIPLE_DONE);
+    }
+
+    if (status_multiple == STATUS_MULTIPLE_DONE) {
+#endif
+        bool success = true;
+#ifdef VL53L0X_FRONT
+        success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT, &latest_ranges[VL53L0X_IDX_FRONT]);
 #endif
 #ifdef VL53L0X_LEFT
-    success &= vl53l0x_read_range_single(VL53L0X_IDX_LEFT, &ranges[VL53L0X_IDX_LEFT]);
+        success &= vl53l0x_read_range_single(VL53L0X_IDX_LEFT, &latest_ranges[VL53L0X_IDX_LEFT]);
 #endif
 #ifdef VL53L0X_RIGHT
-    success &= vl53l0x_read_range_single(VL53L0X_IDX_RIGHT, &ranges[VL53L0X_IDX_RIGHT]);
+        success &= vl53l0x_read_range_single(VL53L0X_IDX_RIGHT, &latest_ranges[VL53L0X_IDX_RIGHT]);
 #endif
 #ifdef VL53L0X_FRONT_LEFT
-    success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_LEFT, &ranges[VL53L0X_IDX_FRONT_LEFT]);
+        success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_LEFT, &latest_ranges[VL53L0X_IDX_FRONT_LEFT]);
 #endif
 #ifdef VL53L0X_FRONT_RIGHT
-    success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_RIGHT, &ranges[VL53L0X_IDX_FRONT_RIGHT]);
+        success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_RIGHT, &latest_ranges[VL53L0X_IDX_FRONT_RIGHT]);
 #endif
-    return success;
+#ifdef VL53L0X_FRONT
+        if (success) {
+            success = start_sysrange_multiple();
+        }
+#endif
+        if (!success) {
+            return false;
+        }
+#ifdef VL53L0X_FRONT
+    }
+#endif
+    for (int i = 0; i < VL53L0X_IDX_COUNT; i++) {
+        ranges[i] = latest_ranges[i];
+    }
+    return true;
 }

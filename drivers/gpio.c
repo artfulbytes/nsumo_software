@@ -180,11 +180,14 @@ void gpio_set_selection(gpio_t gpio, gpio_selection_t selection)
     {
     case GPIO_SEL_GPIO:
         *port_sel_registers[GPIO_PORT(gpio) * 2] &= ~GPIO_PIN(gpio);
+        *port_sel_registers[GPIO_PORT(gpio) * 2 + 1] &= ~GPIO_PIN(gpio);
         break;
     case GPIO_SEL_1:
         *port_sel_registers[GPIO_PORT(gpio) * 2] |= GPIO_PIN(gpio);
+        *port_sel_registers[GPIO_PORT(gpio) * 2 + 1] &= ~GPIO_PIN(gpio);
         break;
     case GPIO_SEL_2:
+        *port_sel_registers[GPIO_PORT(gpio) * 2] &= ~GPIO_PIN(gpio);
         *port_sel_registers[GPIO_PORT(gpio) * 2 + 1] |= GPIO_PIN(gpio);
         break;
     case GPIO_SEL_3:

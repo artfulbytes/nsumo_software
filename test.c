@@ -174,6 +174,23 @@ void test_enemy_detection()
     }
 }
 
+void test_gpio_input()
+{
+    led_init();
+    const gpio_config_t gpio_config = {
+        .gpio = GPIO_RANGE_SENSOR_FRONT_INT,
+        .dir = GPIO_INPUT,
+        .out = GPIO_LOW,
+        .resistor = RESISTOR_ENABLED,
+        .selection = GPIO_SEL_GPIO
+    };
+
+    gpio_configure(&gpio_config);
+    while (1) {
+        led_set_enable(LED_TEST, gpio_get_input(GPIO_RANGE_SENSOR_FRONT_INT));
+    }
+}
+
 #endif
 
 void test_line_detection()
@@ -238,5 +255,4 @@ void test_rotate_and_enemy_detect()
             rotate = new_rotate;
         }
     }
-
 }
