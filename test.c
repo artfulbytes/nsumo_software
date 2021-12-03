@@ -112,6 +112,23 @@ void test_vl53l0x()
     }
 }
 
+void test_vl53l0x_multiple()
+{
+    vl53l0x_ranges_t ranges;
+    bool success = vl53l0x_init();
+    while (success) {
+        success = vl53l0x_read_range_multiple(ranges);
+        trace("left   %d"
+              "right  %d"
+              "fleft  %d"
+              "front  %d"
+              "fright %d\n",
+              ranges[VL53L0X_IDX_LEFT], ranges[VL53L0X_IDX_RIGHT],
+              ranges[VL53L0X_IDX_FRONT_LEFT], ranges[VL53L0X_IDX_FRONT],
+              ranges[VL53L0X_IDX_FRONT_RIGHT]);
+    }
+}
+
 void test_vl53l0x_multiple_time()
 {
     vl53l0x_ranges_t ranges;
@@ -122,7 +139,7 @@ void test_vl53l0x_multiple_time()
         success = vl53l0x_read_range_multiple(ranges);
         measure_cnt++;
         if (!(measure_cnt % 100)) {
-            trace("100 measures in %d ms\n", millis()-last_millis);
+            trace("100 measures in %ld ms\n", millis()-last_millis);
             last_millis = millis();
         }
     }
@@ -248,7 +265,7 @@ void test_rotate_and_enemy_detect()
 
         if (new_rotate != rotate) {
             if (new_rotate) {
-                drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_FAST);
+                drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_FASTEST);
             } else {
                 drive_stop();
             }

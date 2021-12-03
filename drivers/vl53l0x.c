@@ -846,19 +846,19 @@ bool vl53l0x_read_range_multiple(vl53l0x_ranges_t ranges)
 #endif
         bool success = true;
 #ifdef VL53L0X_FRONT
-        success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT, &latest_ranges[VL53L0X_IDX_FRONT]);
+        success &= read_range(VL53L0X_IDX_FRONT, &latest_ranges[VL53L0X_IDX_FRONT]);
 #endif
 #ifdef VL53L0X_LEFT
-        success &= vl53l0x_read_range_single(VL53L0X_IDX_LEFT, &latest_ranges[VL53L0X_IDX_LEFT]);
+        success &= read_range(VL53L0X_IDX_LEFT, &latest_ranges[VL53L0X_IDX_LEFT]);
 #endif
 #ifdef VL53L0X_RIGHT
-        success &= vl53l0x_read_range_single(VL53L0X_IDX_RIGHT, &latest_ranges[VL53L0X_IDX_RIGHT]);
+        success &= read_range(VL53L0X_IDX_RIGHT, &latest_ranges[VL53L0X_IDX_RIGHT]);
 #endif
 #ifdef VL53L0X_FRONT_LEFT
-        success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_LEFT, &latest_ranges[VL53L0X_IDX_FRONT_LEFT]);
+        success &= read_range(VL53L0X_IDX_FRONT_LEFT, &latest_ranges[VL53L0X_IDX_FRONT_LEFT]);
 #endif
 #ifdef VL53L0X_FRONT_RIGHT
-        success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_RIGHT, &latest_ranges[VL53L0X_IDX_FRONT_RIGHT]);
+        success &= read_range(VL53L0X_IDX_FRONT_RIGHT, &latest_ranges[VL53L0X_IDX_FRONT_RIGHT]);
 #endif
 #ifdef VL53L0X_FRONT
         if (success) {

@@ -116,7 +116,6 @@ static main_state_t state_machine_search_run(bool first_entry)
         current_search_state = SEARCH_STATE_NONE;
     }
     const volatile line_detection_t line_detection = line_detection_get();
-    return MAIN_STATE_SEARCH;
     if (line_detection != LINE_DETECTION_NONE) {
         return MAIN_STATE_RETREAT;
     }
@@ -124,7 +123,6 @@ static main_state_t state_machine_search_run(bool first_entry)
     if (enemy_detection & ENEMY_DETECTION_FRONT) {
         return MAIN_STATE_ATTACK;
     }
-
     switch (current_search_state) {
     case SEARCH_STATE_NONE:
         next_search_state = SEARCH_STATE_ROTATE;
@@ -132,7 +130,7 @@ static main_state_t state_machine_search_run(bool first_entry)
     case SEARCH_STATE_ROTATE:
         if (search_timer_passed() < SEARCH_STATE_ROTATE_TIMEOUT) {
             if (search_state_first_entry) {
-                drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_SLOW);
+                drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_FASTEST);
             }
         } else {
             next_search_state = SEARCH_STATE_FORWARD;
