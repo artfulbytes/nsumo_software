@@ -4,8 +4,8 @@
 #include <stdarg.h>
 #include "stdbool.h"
 
-#define TRACE_INFO(fmt, ...) trace("INFO: %s: " fmt "\n", __FUNCTION__, ##__VA_ARGS__)
-#define TRACE_WARN(fmt, ...) trace("WARNING: %s: " fmt "\n", __FUNCTION__, ##__VA_ARGS__)
+#define TRACE_INFO(fmt, ...) trace("[I] %s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define TRACE_WARN(fmt, ...) trace("[W] %s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 /* This should be used for printing, because we really don't want to
  * include stdio.h functions when build for the MCU, adds ~5kB and ROM is

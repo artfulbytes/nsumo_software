@@ -13,8 +13,6 @@
 #define DUTY_CYCLE_FAST (60)
 #define DUTY_CYCLE_FASTEST (100)
 
-#define ARCTURN_DIFF_CONSTANT (0.375f)
-
 #if 0
 static const char *drive_str(drive_t drive)
 {
@@ -70,16 +68,46 @@ void drive_set(drive_t drive, drive_speed_t drive_speed)
         motor_set_duty_cycle(MOTORS_RIGHT, -duty_cycle);
         break;
     case DRIVE_ARCTURN_LEFT:
-#ifndef BUILD_MCU // TODO: Disabled for MCU atm (float point not allowed)
-     //   motor_set_duty_cycle(MOTORS_LEFT, ARCTURN_DIFF_CONSTANT * duty_cycle);
-     //   motor_set_duty_cycle(MOTORS_RIGHT, duty_cycle);
-#endif
+        // TODO: Cleaner mapping
+        switch(drive_speed) {
+        case DRIVE_SPEED_SLOW:
+            motor_set_duty_cycle(MOTORS_RIGHT, 40);
+            motor_set_duty_cycle(MOTORS_LEFT, 20);
+            break;
+        case DRIVE_SPEED_MEDIUM:
+            motor_set_duty_cycle(MOTORS_RIGHT, 60);
+            motor_set_duty_cycle(MOTORS_LEFT, 40);
+            break;
+        case DRIVE_SPEED_FAST:
+            motor_set_duty_cycle(MOTORS_RIGHT, 75);
+            motor_set_duty_cycle(MOTORS_LEFT, 50);
+            break;
+        case DRIVE_SPEED_FASTEST:
+            motor_set_duty_cycle(MOTORS_RIGHT, 80);
+            motor_set_duty_cycle(MOTORS_LEFT, 60);
+            break;
+        }
         break;
     case DRIVE_ARCTURN_RIGHT:
-#ifndef BUILD_MCU // TODO: Disabled for MCU atm (float point not allowed)
-     //   motor_set_duty_cycle(MOTORS_LEFT, duty_cycle);
-     //   motor_set_duty_cycle(MOTORS_RIGHT, ARCTURN_DIFF_CONSTANT * duty_cycle);
-#endif
+        // TODO: Cleaner mapping
+        switch(drive_speed) {
+        case DRIVE_SPEED_SLOW:
+            motor_set_duty_cycle(MOTORS_LEFT, 40);
+            motor_set_duty_cycle(MOTORS_RIGHT, 20);
+            break;
+        case DRIVE_SPEED_MEDIUM:
+            motor_set_duty_cycle(MOTORS_LEFT, 60);
+            motor_set_duty_cycle(MOTORS_RIGHT, 40);
+            break;
+        case DRIVE_SPEED_FAST:
+            motor_set_duty_cycle(MOTORS_LEFT, 75);
+            motor_set_duty_cycle(MOTORS_RIGHT, 30);
+            break;
+        case DRIVE_SPEED_FASTEST:
+            motor_set_duty_cycle(MOTORS_LEFT, 80);
+            motor_set_duty_cycle(MOTORS_RIGHT, 60);
+            break;
+        }
         break;
     }
 }

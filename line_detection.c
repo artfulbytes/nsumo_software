@@ -15,6 +15,7 @@
 #define LINE_SENSOR_VOLTAGE_THRESHOLD (0.0f)
 #endif
 
+// TODO: Make this a function instead...
 static char* line_detection_str[] =
 {
     [LINE_DETECTION_NONE] = "LINE_DETECTION_NONE",
@@ -25,7 +26,9 @@ static char* line_detection_str[] =
     [LINE_DETECTION_FRONT_RIGHT] = "LINE_DETECTION_FRONT_RIGHT",
     [LINE_DETECTION_BACK_RIGHT] = "LINE_DETECTION_BACK_RIGHT",
     [LINE_DETECTION_LEFT] = "LINE_DETECTION_LEFT",
-    [LINE_DETECTION_RIGHT] = "LINE_DETECTION_RIGHT"
+    [LINE_DETECTION_RIGHT] = "LINE_DETECTION_RIGHT",
+    [LINE_DETECTION_DIAGONAL_LEFT] = "LINE_DETECTION_DIAGONALLEFT",
+    [LINE_DETECTION_DIAGONAL_RIGHT] = "LINE_DETECTION_DIAGONAL_RIGHT"
 };
 
 char* line_detection_enum_to_str(line_detection_t line_detection)
@@ -54,12 +57,16 @@ line_detection_t line_detection_get()
             return LINE_DETECTION_FRONT;
         } else if (backLeft) {
             return LINE_DETECTION_LEFT;
+        } else if (backRight) {
+            return LINE_DETECTION_DIAGONAL_LEFT;
         } else {
             return LINE_DETECTION_FRONT_LEFT;
         }
     } else if (frontRight) {
         if (backRight) {
             return LINE_DETECTION_RIGHT;
+        } else if (backLeft) {
+            return LINE_DETECTION_DIAGONAL_RIGHT;
         } else {
             return LINE_DETECTION_FRONT_RIGHT;
         }

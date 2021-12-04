@@ -180,10 +180,8 @@ void test_enemy_detection()
     led_init();
     enemy_detection_init();
     while (1) {
-        if (
-            (enemy_detection_get() & ENEMY_DETECTION_RIGHT) ||
-            (enemy_detection_get() & ENEMY_DETECTION_FRONT) ||
-            (enemy_detection_get() & ENEMY_DETECTION_LEFT)) {
+        enemy_detection_t detection = enemy_detection_get();
+        if (detection.position == ENEMY_POS_FRONT) {
             led_set_enable(LED_TEST, true);
         } else {
             led_set_enable(LED_TEST, false);
@@ -243,6 +241,8 @@ void test_drive_and_line_detect()
         case LINE_DETECTION_NONE:
         case LINE_DETECTION_LEFT:
         case LINE_DETECTION_RIGHT:
+        case LINE_DETECTION_DIAGONAL_LEFT:
+        case LINE_DETECTION_DIAGONAL_RIGHT:
             break;
         }
 
@@ -261,7 +261,8 @@ void test_rotate_and_enemy_detect()
     bool rotate = false;
     bool new_rotate = false;
     while (1) {
-        new_rotate = !(enemy_detection_get() & (ENEMY_DETECTION_FRONT));// | ENEMY_DETECTION_FRONT_RIGHT | ENEMY_DETECTION_FRONT_LEFT));
+        const enemy_detection_t detection = enemy_detection_get();
+        new_rotate = (detection.position != ENEMY_POS_FRONT);
 
         if (new_rotate != rotate) {
             if (new_rotate) {
@@ -273,3 +274,13 @@ void test_rotate_and_enemy_detect()
         }
     }
 }
+
+void test_enemy_detection_print()
+{
+    enemy_detection_init();
+    while (1) {
+        enemy_detection_t detection = enemy_detection_get();
+        trace("%s %s\n", enemy_pos_str(detection.position), enemy_range_str(detection.range));
+    }
+}
+

@@ -20,5 +20,6 @@ void test_gpio_input(void);
 void test_line_detection(void);
 void test_drive_and_line_detect(void);
 void test_rotate_and_enemy_detect(void);
+void test_enemy_detection_print(void);
 
 #endif /* TEST_H */

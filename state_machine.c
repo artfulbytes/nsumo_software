@@ -19,6 +19,14 @@
 
 #include <stdbool.h>
 
+#define SM_ASSERT(exp, msg) do { \
+    if (!exp) { \
+        TRACE_WARN("Assert:"#exp" %s", msg); \
+        drive_stop(); \
+        while(1); \
+    } \
+} while (0)
+
 typedef enum state {
     MAIN_STATE_SEARCH,
     MAIN_STATE_ATTACK,
@@ -29,10 +37,15 @@ typedef enum state {
 } main_state_t;
 
 typedef enum {
-    SEARCH_STATE_NONE,
     SEARCH_STATE_ROTATE,
     SEARCH_STATE_FORWARD,
 } search_state_t;
+
+typedef enum {
+    ATTACK_STATE_FORWARD,
+    ATTACK_STATE_LEFT,
+    ATTACK_STATE_RIGHT,
+} attack_state_t;
 
 typedef enum {
     RETREAT_STATE_NONE,
@@ -52,21 +65,21 @@ typedef enum {
     TEST_STATE_DRIVE_ROTATE_RIGHT,
 } test_state_t;
 
-const char *main_state_str(main_state_t main_state)
+static const char *main_state_str(main_state_t main_state)
 {
     switch (main_state)
     {
     case MAIN_STATE_SEARCH: return "MAIN_STATE_SEARCH";
     case MAIN_STATE_ATTACK: return "MAIN_STATE_ATTACK";
     case MAIN_STATE_RETREAT: return "MAIN_STATE_RETREAT";
-#if BUILD_MCU
+#ifdef MCU_TEST
     case MAIN_STATE_TEST: return "MAIN_STATE_TEST";
 #endif
     }
     return "";
 }
 
-const char *retreat_state_str(retreat_state_t retreat_state)
+static const char *retreat_state_str(retreat_state_t retreat_state)
 {
     switch (retreat_state)
     {
@@ -81,7 +94,8 @@ const char *retreat_state_str(retreat_state_t retreat_state)
     return "";
 }
 
-const char *test_state_str(test_state_t test_state)
+#ifdef MCU_TEST
+static const char *test_state_str(test_state_t test_state)
 {
     switch (test_state)
     {
@@ -93,6 +107,7 @@ const char *test_state_str(test_state_t test_state)
     }
     return "";
 }
+#endif
 
 static uint32_t search_state_start_time = 0;
 static void search_timer_start()
@@ -100,45 +115,62 @@ static void search_timer_start()
     search_state_start_time = millis();
 }
 
-static uint32_t search_timer_passed()
+static uint32_t search_timer_elapsed()
 {
     return millis() - search_state_start_time;
 }
 
+// TODO: Timeout on head-to-head for too long
+//     Best way to break out of it? Increase power for a while...
+//     Timeout again? Sharp arc turn reverse
+
+//TODO: Get global enemy detect instead...
+static bool search_go_to_attack(enemy_pos_t pos)
+{
+    return pos == ENEMY_POS_FRONT ||
+           pos == ENEMY_POS_FRONT_LEFT ||
+           pos == ENEMY_POS_FRONT_RIGHT;
+}
+
 #define SEARCH_STATE_ROTATE_TIMEOUT (1000)
 #define SEARCH_STATE_FORWARD_TIMEOUT (3000)
-static main_state_t state_machine_search_run(bool first_entry)
+static main_state_t main_state_search(bool entered)
 {
-    static search_state_t current_search_state = SEARCH_STATE_NONE;
-    static bool search_state_first_entry = true;
+    // TODO: Use history to make better guesses of where to search
+    //     Was the enemy on front right last? turn left
+    //     Was the enemy on front left last? turn right
+    static search_state_t current_search_state = SEARCH_STATE_ROTATE;
+    static bool entered_new_search_state = true;
     search_state_t next_search_state = current_search_state;
-    if (first_entry) {
-        current_search_state = SEARCH_STATE_NONE;
+    if (entered) {
+        search_timer_start();
+        current_search_state = SEARCH_STATE_ROTATE;
+        next_search_state = current_search_state;
+        entered_new_search_state = true;
     }
     const volatile line_detection_t line_detection = line_detection_get();
     if (line_detection != LINE_DETECTION_NONE) {
         return MAIN_STATE_RETREAT;
     }
-    const enemy_detection_t enemy_detection = ENEMY_DETECTION_NONE;//enemy_detection_get();
-    if (enemy_detection & ENEMY_DETECTION_FRONT) {
+
+    const enemy_detection_t enemy = enemy_detection_get();
+    if (search_go_to_attack(enemy.position)) {
         return MAIN_STATE_ATTACK;
     }
+
     switch (current_search_state) {
-    case SEARCH_STATE_NONE:
-        next_search_state = SEARCH_STATE_ROTATE;
-        break;
     case SEARCH_STATE_ROTATE:
-        if (search_timer_passed() < SEARCH_STATE_ROTATE_TIMEOUT) {
-            if (search_state_first_entry) {
-                drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_FASTEST);
+        if (search_timer_elapsed() < SEARCH_STATE_ROTATE_TIMEOUT) {
+            if (entered_new_search_state) {
+                drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_MEDIUM);
             }
         } else {
             next_search_state = SEARCH_STATE_FORWARD;
         }
         break;
     case SEARCH_STATE_FORWARD:
-        if (search_timer_passed() < SEARCH_STATE_FORWARD_TIMEOUT) {
-            if (search_state_first_entry) {
+        if (search_timer_elapsed() < SEARCH_STATE_FORWARD_TIMEOUT) {
+            if (entered_new_search_state) {
                 drive_set(DRIVE_FORWARD, DRIVE_SPEED_FAST);
             }
         } else {
@@ -147,14 +179,141 @@ static main_state_t state_machine_search_run(bool first_entry)
         break;
     }
 
-    if (next_search_state != current_search_state) {
+    entered_new_search_state = (next_search_state != current_search_state);
+    if (entered_new_search_state) {
         search_timer_start();
         current_search_state = next_search_state;
-        search_state_first_entry = true;
-    } else {
-        search_state_first_entry = false;
     }
     return MAIN_STATE_SEARCH;
+}
+
+/* TODO: Create more general timer module */
+static uint32_t attack_state_start_time = 0;
+static void attack_timer_start()
+{
+    attack_state_start_time = millis();
+}
+static uint32_t attack_timer_elapsed()
+{
+    return millis() - attack_state_start_time;
+}
+
+static main_state_t check_valid_attack_enemy_pos(enemy_pos_t pos)
+{
+    if (pos == ENEMY_POS_IMPOSSIBLE) {
+        SM_ASSERT(false, "");
+    } else if (pos == ENEMY_POS_NONE ||
+               pos == ENEMY_POS_LEFT ||
+               pos == ENEMY_POS_RIGHT) {
+        return MAIN_STATE_SEARCH;
+    }
+    return MAIN_STATE_ATTACK;
+}
+
+#define ATTACK_STATE_TIMEOUT (5000)
+static main_state_t main_state_attack(bool entered)
+{
+    static attack_state_t current_attack_state = ATTACK_STATE_FORWARD;
+    attack_state_t next_attack_state = current_attack_state;
+    static bool entered_new_attack_state = true;
+
+    // TODO: Volatile necessary?
+    const volatile line_detection_t line_detection = line_detection_get();
+    if (line_detection != LINE_DETECTION_NONE) {
+        return MAIN_STATE_RETREAT;
+    }
+    const enemy_detection_t enemy = enemy_detection_get();
+
+    // Sanity check....
+    const main_state_t new_main_state = check_valid_attack_enemy_pos(enemy.position);
+    if (MAIN_STATE_ATTACK != new_main_state) {
+        return new_main_state;
+    }
+
+    if (entered) {
+        if (enemy.position == ENEMY_POS_FRONT) {
+            current_attack_state = ATTACK_STATE_FORWARD;
+        } else if (enemy.position == ENEMY_POS_FRONT_LEFT) {
+            current_attack_state = ATTACK_STATE_LEFT;
+        } else if (enemy.position == ENEMY_POS_FRONT_RIGHT) {
+            current_attack_state = ATTACK_STATE_RIGHT;
+        } else {
+            SM_ASSERT(false, "");
+        }
+        next_attack_state = current_attack_state;
+        entered_new_attack_state = true;
+        attack_timer_start();
+    }
+
+    switch (current_attack_state) {
+    case ATTACK_STATE_FORWARD:
+        if (enemy.position != ENEMY_POS_FRONT) {
+            if (enemy.position == ENEMY_POS_FRONT_LEFT) {
+                next_attack_state = ATTACK_STATE_LEFT;
+            } else if (enemy.position == ENEMY_POS_FRONT_RIGHT) {
+                next_attack_state = ATTACK_STATE_RIGHT;
+            } else {
+                SM_ASSERT(false, "");
+            }
+            break;
+        }
+        if (entered_new_attack_state) {
+            drive_set(DRIVE_FORWARD, DRIVE_SPEED_FAST);
+        }
+        break;
+    case ATTACK_STATE_LEFT:
+        if (enemy.position != ENEMY_POS_FRONT_LEFT) {
+            if (enemy.position == ENEMY_POS_FRONT) {
+                next_attack_state = ATTACK_STATE_FORWARD;
+            } else if (enemy.position == ENEMY_POS_FRONT_RIGHT) {
+                // Unlikely but possible
+                next_attack_state = ATTACK_STATE_RIGHT;
+            } else {
+                SM_ASSERT(false, "");
+            }
+            break;
+        }
+        if (entered_new_attack_state) {
+            // TODO: Dist -> Drive speed
+            drive_set(DRIVE_ARCTURN_LEFT, DRIVE_SPEED_FAST);
+        }
+        break;
+    case ATTACK_STATE_RIGHT:
+        if (enemy.position != ENEMY_POS_FRONT_RIGHT) {
+            if (enemy.position == ENEMY_POS_FRONT) {
+                next_attack_state = ATTACK_STATE_FORWARD;
+            } else if (enemy.position == ENEMY_POS_FRONT_LEFT) {
+                // Unlikely but possible
+                next_attack_state = ATTACK_STATE_LEFT;
+            } else {
+                SM_ASSERT(false, enemy_pos_str(enemy.position));
+            }
+            break;
+        }
+        if (entered_new_attack_state) {
+            // TODO: Dist -> Drive speed
+            drive_set(DRIVE_ARCTURN_RIGHT, DRIVE_SPEED_FAST);
+        }
+        break;
+    }
+
+    // Stuck in same attack state for long. We might be stuck in a head-to-head
+    // battle.
+    // TODO: Try to break out of it:
+    //    (New attack state ATTACK_STATE_BREAKOUT_FAST_FORWARD) // Could get us to drive out on our own if unlucky...
+    //    (New attack state ATTACK_STATE_BREAKOUT_SHARP_LEFT_BACK) // Could get them to drive out on their own actually...
+    //
+    //
+    if (attack_timer_elapsed() > ATTACK_STATE_TIMEOUT) {
+        SM_ASSERT(false, "Attack timeout");
+    }
+
+    entered_new_attack_state = (next_attack_state != current_attack_state);
+    if (entered_new_attack_state) {
+        attack_timer_start();
+        current_attack_state = next_attack_state;
+    }
+    return MAIN_STATE_ATTACK;
 }
 
 static const uint16_t retreat_state_timeouts[] =
@@ -206,14 +365,17 @@ static bool is_retreat_state_done(retreat_state_t retreat_state)
     return (millis() - retreat_state_start_time) >= retreat_state_timeouts[retreat_state];
 }
 
-static main_state_t state_machine_retreat_run(bool new_entry)
+static main_state_t main_state_retreat(bool entered)
 {
     static retreat_state_t current_retreat_state = RETREAT_STATE_NONE;
     retreat_state_t next_retreat_state = current_retreat_state;
-    if (new_entry) {
+    if (entered) {
         current_retreat_state = RETREAT_STATE_NONE;
         next_retreat_state = RETREAT_STATE_NONE;
     }
+
+    // TODO: No enemy detection in this state?
+    trace("Retreat state %s\n", retreat_state_str(current_retreat_state));
 
     const line_detection_t line_detection = line_detection_get();
     switch (line_detection) {
@@ -226,15 +388,44 @@ static main_state_t state_machine_retreat_run(bool new_entry)
         next_retreat_state = RETREAT_STATE_DRIVE_REVERSE;
         break;
     case LINE_DETECTION_BACK:
-    case LINE_DETECTION_BACK_LEFT:
-    case LINE_DETECTION_BACK_RIGHT:
         next_retreat_state = RETREAT_STATE_DRIVE_FORWARD;
+        break;
+    case LINE_DETECTION_BACK_LEFT:
+        if (current_retreat_state == RETREAT_STATE_DRIVE_REVERSE) {
+            // 1. Line detected by both sensors on the right before timeout
+            //    This means the line is to the right
+            next_retreat_state = RETREAT_STATE_DRIVE_ARCTURN_LEFT;
+        } else if (current_retreat_state == RETREAT_STATE_DRIVE_ARCTURN_LEFT) {
+            // 2. We are still detecting the line to the right
+            //    Keep driving
+        } else {
+            next_retreat_state = RETREAT_STATE_DRIVE_FORWARD;
+        }
+        break;
+    case LINE_DETECTION_BACK_RIGHT:
+        if (current_retreat_state == RETREAT_STATE_DRIVE_REVERSE) {
+            // 1. Line detected by both sensors on the left before timeout
+            //    This means the line is to the right
+            next_retreat_state = RETREAT_STATE_DRIVE_ARCTURN_RIGHT;
+        } else if (current_retreat_state == RETREAT_STATE_DRIVE_ARCTURN_RIGHT) {
+            // 2. We are still detecting the line to the right
+            //    Keep driving
+        } else {
+            next_retreat_state = RETREAT_STATE_DRIVE_FORWARD;
+        }
         break;
     case LINE_DETECTION_LEFT:
         next_retreat_state = RETREAT_STATE_DRIVE_ARCTURN_RIGHT;
         break;
     case LINE_DETECTION_RIGHT:
         next_retreat_state = RETREAT_STATE_DRIVE_ARCTURN_LEFT;
+        break;
+    case LINE_DETECTION_DIAGONAL_LEFT:
+    case LINE_DETECTION_DIAGONAL_RIGHT:
+        // Weird but possible state
+        // TODO: It's ambigiuous if the dohyo is in front or back. Must use
+        // detect history for best guess.
+        SM_ASSERT(false, "");
         break;
     }
     /* Keep resetting the time until we no longer detect the line */
@@ -254,7 +445,7 @@ static main_state_t state_machine_retreat_run(bool new_entry)
     return MAIN_STATE_RETREAT;
 }
 
-#ifdef BUILD_MCU
+#ifdef MCU_TEST
 static void handle_test_state(test_state_t test_state)
 {
     switch (test_state) {
@@ -276,7 +467,7 @@ static void handle_test_state(test_state_t test_state)
     }
 }
 
-static main_state_t state_machine_test_run(ir_remote_command_t remote_command)
+static main_state_t main_state_test(ir_remote_command_t remote_command)
 {
     static test_state_t current_test_state = TEST_STATE_NONE;
     test_state_t next_test_state = current_test_state;
@@ -338,7 +529,7 @@ static void init()
     /* TODO: Init time here? */
     enemy_detection_init();
     line_detection_init();
-#ifdef BUILD_MCU
+#ifdef MCU_TEST
     ir_remote_init();
 #endif
     drive_init();
@@ -349,10 +540,13 @@ void state_machine_run()
     init();
     main_state_t current_state = MAIN_STATE_SEARCH;
     main_state_t next_state = current_state;
-    bool state_new_entry = true;
+    bool entered_new_state = true;
 
     while(true) {
-#ifdef BUILD_MCU
+        // TODO: Comment that no state is allowed to block...
+        // TODO: Retrive stuff globally here every round, makes it easier to save history etc...
+        // TODO: Save to static variable and have wrapper functions in this file...
+#ifdef MCU_TEST
         ir_remote_command_t remote_command = ir_remote_get_command();
         if (remote_command != COMMAND_NONE) {
             drive_stop();
@@ -362,43 +556,29 @@ void state_machine_run()
         switch (current_state)
         {
         case MAIN_STATE_SEARCH: /* Drive around to find the enemy */
-            next_state = state_machine_search_run(state_new_entry);
+            next_state = main_state_search(entered_new_state);
             break;
         case MAIN_STATE_ATTACK: /* Enemy detected so attack it */
         {
-            const line_detection_t line_detection = line_detection_get();
-            if (line_detection != LINE_DETECTION_NONE) {
-                next_state = MAIN_STATE_RETREAT;
-                drive_stop();
-                break;
-            }
-            const enemy_detection_t enemy_detection = ENEMY_DETECTION_NONE;//enemy_detection_get();
-            if (enemy_detection & ENEMY_DETECTION_FRONT) {
-                if (state_new_entry) {
-                    drive_set(DRIVE_FORWARD, DRIVE_SPEED_FASTEST);
-                }
-            } else {
-                drive_stop();
-                next_state = MAIN_STATE_SEARCH;
-            }
+            next_state = main_state_attack(entered_new_state);
             break;
         }
         case MAIN_STATE_RETREAT: /* Line detected so drive away from it */
-            next_state = state_machine_retreat_run(state_new_entry);
+            next_state = main_state_retreat(entered_new_state);
             break;
-#ifdef BUILD_MCU
+#ifdef MCU_TEST
         case MAIN_STATE_TEST:
-            next_state = state_machine_test_run(remote_command);
+            next_state = main_state_test(remote_command);
             break;
 #endif
         }
 
         if (next_state != current_state) {
             current_state = next_state;
-            state_new_entry = true;
+            entered_new_state = true;
             trace("New state: %s\n", main_state_str(current_state));
         } else {
-            state_new_entry = false;
+            entered_new_state = false;
         }
 
 #ifndef BUILD_MCU

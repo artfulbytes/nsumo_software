@@ -3,18 +3,32 @@
 
 #include <stdint.h>
 
-/* Enum can be used as bitwise flags */
-typedef enum enemy_detection {
-    ENEMY_DETECTION_NONE = 0,
-    ENEMY_DETECTION_LEFT = 1,
-    ENEMY_DETECTION_FRONT_LEFT = 2,
-    ENEMY_DETECTION_FRONT = 4,
-    ENEMY_DETECTION_FRONT_RIGHT = 8,
-    ENEMY_DETECTION_RIGHT = 16
+typedef enum enemy_pos {
+    ENEMY_POS_NONE,
+    ENEMY_POS_FRONT_LEFT,
+    ENEMY_POS_FRONT,
+    ENEMY_POS_FRONT_RIGHT,
+    ENEMY_POS_LEFT,
+    ENEMY_POS_RIGHT,
+    ENEMY_POS_IMPOSSIBLE // Keep this for debugging
+} enemy_pos_t;
+
+typedef enum enemy_range {
+    ENEMY_RANGE_NONE,
+    ENEMY_RANGE_CLOSE,
+    ENEMY_RANGE_MID,
+    ENEMY_RANGE_FAR,
+} enemy_range_t;
+
+typedef struct enemy_detection
+{
+    enemy_pos_t position;
+    enemy_range_t range;
 } enemy_detection_t;
 
-/* TODO: Rework: Need to retrieve distances as well...*/
-uint8_t enemy_detection_get(void);
+enemy_detection_t enemy_detection_get(void);
 void enemy_detection_init(void);
+const char *enemy_pos_str(enemy_pos_t pos);
+const char *enemy_range_str(enemy_range_t range);
 
 #endif /* ENEMY_DETECTION_H */
