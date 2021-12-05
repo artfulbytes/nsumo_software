@@ -213,7 +213,7 @@ void test_line_detection()
     line_detection_init();
     while (1) {
         line_detection_t line_detection = line_detection_get();
-        trace("%s\n", line_detection_enum_to_str(line_detection));
+        trace("%s\n", line_detection_str(line_detection));
     }
 }
 

@@ -16,7 +16,7 @@
 #endif
 
 // TODO: Make this a function instead...
-static char* line_detection_str[] =
+static char* line_detection_str_map[] =
 {
     [LINE_DETECTION_NONE] = "LINE_DETECTION_NONE",
     [LINE_DETECTION_FRONT] = "LINE_DETECTION_FRONT",
@@ -31,9 +31,9 @@ static char* line_detection_str[] =
     [LINE_DETECTION_DIAGONAL_RIGHT] = "LINE_DETECTION_DIAGONAL_RIGHT"
 };
 
-char* line_detection_enum_to_str(line_detection_t line_detection)
+char* line_detection_str(line_detection_t line_detection)
 {
-    return line_detection_str[line_detection];
+    return line_detection_str_map[line_detection];
 }
 
 line_detection_t line_detection_get()
