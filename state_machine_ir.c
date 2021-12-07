@@ -29,26 +29,26 @@ typedef enum
     STATE_RIGHT
 } robot_state_t;
 
-static const robot_command_t ir_command_to_robot_command[] =
+static const robot_command_t ir_key_to_robot_command[] =
 {
-    [COMMAND_1] = ROBOT_SET_SPEED_10,
-    [COMMAND_2] = ROBOT_SET_SPEED_20,
-    [COMMAND_3] = ROBOT_SET_SPEED_30,
-    [COMMAND_4] = ROBOT_SET_SPEED_40,
-    [COMMAND_5] = ROBOT_SET_SPEED_50,
-    [COMMAND_6] = ROBOT_SET_SPEED_60,
-    [COMMAND_7] = ROBOT_SET_SPEED_70,
-    [COMMAND_8] = ROBOT_SET_SPEED_80,
-    [COMMAND_9] = ROBOT_SET_SPEED_90,
-    [COMMAND_0] = ROBOT_SET_SPEED_100,
-    [COMMAND_STAR] = ROBOT_STOP,
-    [COMMAND_HASH] = ROBOT_STOP,
-    [COMMAND_UP] = ROBOT_FORWARD,
-    [COMMAND_DOWN] = ROBOT_REVERSE,
-    [COMMAND_LEFT] = ROBOT_LEFT,
-    [COMMAND_RIGHT] = ROBOT_RIGHT,
-    [COMMAND_OK] = ROBOT_STOP,
-    [COMMAND_NONE] = ROBOT_STOP
+    [IR_KEY_1] = ROBOT_SET_SPEED_10,
+    [IR_KEY_2] = ROBOT_SET_SPEED_20,
+    [IR_KEY_3] = ROBOT_SET_SPEED_30,
+    [IR_KEY_4] = ROBOT_SET_SPEED_40,
+    [IR_KEY_5] = ROBOT_SET_SPEED_50,
+    [IR_KEY_6] = ROBOT_SET_SPEED_60,
+    [IR_KEY_7] = ROBOT_SET_SPEED_70,
+    [IR_KEY_8] = ROBOT_SET_SPEED_80,
+    [IR_KEY_9] = ROBOT_SET_SPEED_90,
+    [IR_KEY_0] = ROBOT_SET_SPEED_100,
+    [IR_KEY_STAR] = ROBOT_STOP,
+    [IR_KEY_HASH] = ROBOT_STOP,
+    [IR_KEY_UP] = ROBOT_FORWARD,
+    [IR_KEY_DOWN] = ROBOT_REVERSE,
+    [IR_KEY_LEFT] = ROBOT_LEFT,
+    [IR_KEY_RIGHT] = ROBOT_RIGHT,
+    [IR_KEY_OK] = ROBOT_STOP,
+    [IR_KEY_NONE] = ROBOT_STOP
 };
 
 // TODO: struct for holding speed and state?
@@ -161,13 +161,13 @@ static void handle_speed_command(robot_command_t speed_command)
     current_speed = new_speed;
 }
 
-void state_machine_ir_handle_command(ir_remote_command_t ir_command)
+void state_machine_ir_handle_key(ir_key_t key)
 {
-    if (ir_command == COMMAND_NONE) {
+    if (key == IR_KEY_NONE) {
         return;
     }
 
-    robot_command_t robot_command = ir_command_to_robot_command[ir_command];
+    robot_command_t robot_command = ir_key_to_robot_command[key];
     robot_state_t new_state = current_state;
     switch(robot_command) {
     case ROBOT_STOP:

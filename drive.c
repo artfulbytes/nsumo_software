@@ -8,36 +8,78 @@
 #include "trace.h"
 
 #define DUTY_CYCLE_STOP (0)
-#define DUTY_CYCLE_SLOW (25)
-#define DUTY_CYCLE_MEDIUM (50)
-#define DUTY_CYCLE_FAST (60)
-#define DUTY_CYCLE_FASTEST (100)
 
-#if 0
-static const char *drive_str(drive_t drive)
+typedef struct {
+    int8_t left;
+    int8_t right;
+} duty_cycles_t;
+
+/* Each drive is a pair (e.g. (FORWARD,REVERSE), (ROTATE_LEFT, ROTATE_RIGHT)). To save
+ * space, only store one drive in each pair, and use is_opposite to map to the opposing
+ * drive. */
+static const duty_cycles_t drive_to_duty_cycle[][4] =
 {
-    switch (drive)
+    [DRIVE_FORWARD] =
+        {
+            [DRIVE_SPEED_SLOW] = {25, 25},
+            [DRIVE_SPEED_MEDIUM] = {50, 50},
+            [DRIVE_SPEED_FAST] = {60, 60},
+            [DRIVE_SPEED_FASTEST] = {100, 100},
+        },
+    [DRIVE_ROTATE_LEFT] =
+        {
+            [DRIVE_SPEED_SLOW] = {-25, 25},
+            [DRIVE_SPEED_MEDIUM] = {-50, 50},
+            [DRIVE_SPEED_FAST] = {-60, 60},
+            [DRIVE_SPEED_FASTEST] = {-100, 100},
+        },
+    [DRIVE_ARCTURN_SHARP_LEFT] =
+        {
+            [DRIVE_SPEED_SLOW] = {-10, 25},
+            [DRIVE_SPEED_MEDIUM] = {-10, 50},
+            [DRIVE_SPEED_FAST] = {-15, 60},
+            [DRIVE_SPEED_FASTEST] = {-20, 100},
+        },
+    [DRIVE_ARCTURN_MID_LEFT] =
+        {
+            [DRIVE_SPEED_SLOW] = {15, 25},
+            [DRIVE_SPEED_MEDIUM] = {30, 50},
+            [DRIVE_SPEED_FAST] = {35, 60},
+            [DRIVE_SPEED_FASTEST] = {50, 100},
+        },
+    [DRIVE_ARCTURN_WIDE_LEFT] =
+        {
+            [DRIVE_SPEED_SLOW] = {20, 25},
+            [DRIVE_SPEED_MEDIUM] = {39, 50},
+            [DRIVE_SPEED_FAST] = {47, 60},
+            [DRIVE_SPEED_FASTEST] = {78, 100},
+        },
+};
+
+static void negate(drive_t drive, bool reverse, int8_t *left, int8_t *right)
+{
+    switch (drive) {
+    case DRIVE_REVERSE:
+    case DRIVE_ROTATE_RIGHT:
+        *left = -*left;
+        *right = -*right;
+        break;
+    case DRIVE_ARCTURN_SHARP_RIGHT:
+    case DRIVE_ARCTURN_MID_RIGHT:
+    case DRIVE_ARCTURN_WIDE_RIGHT:
     {
-    case DRIVE_FORWARD: return "FORWARD";
-    case DRIVE_REVERSE: return "REVERSE";
-    case DRIVE_ROTATE_LEFT: return "ROTATE_LEFT";
-    case DRIVE_ROTATE_RIGHT: return "ROTATE_RIGHT";
-    case DRIVE_ARCTURN_LEFT: return "ARCTURN_LEFT";
-    case DRIVE_ARCTURN_RIGHT: return "ARCTURN_RIGHT";
+        const int8_t left_tmp = *left;
+        *left = *right;
+        *right = left_tmp;
+        break;
     }
-    return "";
-}
-#endif
-
-static uint16_t get_duty_cycle(drive_speed_t drive_speed)
-{
-    switch (drive_speed) {
-    case DRIVE_SPEED_SLOW: return DUTY_CYCLE_SLOW;
-    case DRIVE_SPEED_MEDIUM: return DUTY_CYCLE_MEDIUM;
-    case DRIVE_SPEED_FAST: return DUTY_CYCLE_FAST;
-    case DRIVE_SPEED_FASTEST: return DUTY_CYCLE_FASTEST;
+    default:
+        break;
     }
-    return DUTY_CYCLE_STOP;
+    if (reverse) {
+        *left = -*left;
+        *right = -*right;
+    }
 }
 
 void drive_stop()
@@ -46,70 +88,13 @@ void drive_stop()
     motor_set_duty_cycle(MOTORS_RIGHT, DUTY_CYCLE_STOP);
 }
 
-void drive_set(drive_t drive, drive_speed_t drive_speed)
+void drive_set(drive_t drive, bool reverse, drive_speed_t drive_speed)
 {
-    const int16_t duty_cycle = get_duty_cycle(drive_speed);
-    switch (drive)
-    {
-    case DRIVE_FORWARD:
-        motor_set_duty_cycle(MOTORS_LEFT, duty_cycle);
-        motor_set_duty_cycle(MOTORS_RIGHT, duty_cycle);
-        break;
-    case DRIVE_REVERSE:
-        motor_set_duty_cycle(MOTORS_LEFT, -duty_cycle);
-        motor_set_duty_cycle(MOTORS_RIGHT, -duty_cycle);
-        break;
-    case DRIVE_ROTATE_LEFT:
-        motor_set_duty_cycle(MOTORS_LEFT, -duty_cycle);
-        motor_set_duty_cycle(MOTORS_RIGHT, duty_cycle);
-        break;
-    case DRIVE_ROTATE_RIGHT:
-        motor_set_duty_cycle(MOTORS_LEFT, duty_cycle);
-        motor_set_duty_cycle(MOTORS_RIGHT, -duty_cycle);
-        break;
-    case DRIVE_ARCTURN_LEFT:
-        // TODO: Cleaner mapping
-        switch(drive_speed) {
-        case DRIVE_SPEED_SLOW:
-            motor_set_duty_cycle(MOTORS_RIGHT, 40);
-            motor_set_duty_cycle(MOTORS_LEFT, 20);
-            break;
-        case DRIVE_SPEED_MEDIUM:
-            motor_set_duty_cycle(MOTORS_RIGHT, 60);
-            motor_set_duty_cycle(MOTORS_LEFT, 40);
-            break;
-        case DRIVE_SPEED_FAST:
-            motor_set_duty_cycle(MOTORS_RIGHT, 75);
-            motor_set_duty_cycle(MOTORS_LEFT, 50);
-            break;
-        case DRIVE_SPEED_FASTEST:
-            motor_set_duty_cycle(MOTORS_RIGHT, 80);
-            motor_set_duty_cycle(MOTORS_LEFT, 60);
-            break;
-        }
-        break;
-    case DRIVE_ARCTURN_RIGHT:
-        // TODO: Cleaner mapping
-        switch(drive_speed) {
-        case DRIVE_SPEED_SLOW:
-            motor_set_duty_cycle(MOTORS_LEFT, 40);
-            motor_set_duty_cycle(MOTORS_RIGHT, 20);
-            break;
-        case DRIVE_SPEED_MEDIUM:
-            motor_set_duty_cycle(MOTORS_LEFT, 60);
-            motor_set_duty_cycle(MOTORS_RIGHT, 40);
-            break;
-        case DRIVE_SPEED_FAST:
-            motor_set_duty_cycle(MOTORS_LEFT, 75);
-            motor_set_duty_cycle(MOTORS_RIGHT, 30);
-            break;
-        case DRIVE_SPEED_FASTEST:
-            motor_set_duty_cycle(MOTORS_LEFT, 80);
-            motor_set_duty_cycle(MOTORS_RIGHT, 60);
-            break;
-        }
-        break;
-    }
+    int8_t left = drive_to_duty_cycle[drive - (drive % 2)][drive_speed].left;
+    int8_t right = drive_to_duty_cycle[drive - (drive % 2)][drive_speed].right;
+    negate(drive, reverse, &left, &right);
+    motor_set_duty_cycle(MOTORS_LEFT, left);
+    motor_set_duty_cycle(MOTORS_RIGHT, right);
 }
 
 void drive_init()

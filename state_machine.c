@@ -4,7 +4,6 @@
 #include "enemy_detection.h"
 #include "line_detection.h"
 #include "time.h"
-#include "sleep.h"
 #include "trace.h"
 #include "ir_remote.h"
 #else
@@ -256,9 +255,9 @@ static main_state_t main_state_search(search_state_data_t *search_data, bool ent
                 const enemy_detection_t *last_enemy = last_enemy_detection(hist);
                 // TODO: Account for pure left and right too?
                 if (last_enemy && last_enemy->position == ENEMY_POS_FRONT_RIGHT) {
-                    drive_set(DRIVE_ROTATE_RIGHT, DRIVE_SPEED_MEDIUM);
+                    drive_set(DRIVE_ROTATE_RIGHT, false, DRIVE_SPEED_MEDIUM);
                 } else {
-                    drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_MEDIUM);
+                    drive_set(DRIVE_ROTATE_LEFT, false, DRIVE_SPEED_MEDIUM);
                 }
             }
         } else {
@@ -269,7 +268,7 @@ static main_state_t main_state_search(search_state_data_t *search_data, bool ent
     case SEARCH_STATE_FORWARD:
         if (search_timer_elapsed() < SEARCH_STATE_FORWARD_TIMEOUT) {
             if (search_data->entered_new_state) {
-                drive_set(DRIVE_FORWARD, DRIVE_SPEED_FAST);
+                drive_set(DRIVE_FORWARD, false, DRIVE_SPEED_FAST);
             }
         } else {
             next_search_state = SEARCH_STATE_ROTATE;
@@ -351,7 +350,7 @@ static main_state_t main_state_attack(attack_state_data_t *attack_data, bool ent
             break;
         }
         if (attack_data->entered_new_state) {
-            drive_set(DRIVE_FORWARD, DRIVE_SPEED_FAST);
+            drive_set(DRIVE_FORWARD, false, DRIVE_SPEED_FAST);
         }
         break;
     case ATTACK_STATE_LEFT:
@@ -368,7 +367,7 @@ static main_state_t main_state_attack(attack_state_data_t *attack_data, bool ent
         }
         if (attack_data->entered_new_state) {
             // TODO: Dist -> Drive speed
-            drive_set(DRIVE_ARCTURN_LEFT, DRIVE_SPEED_FAST);
+            drive_set(DRIVE_ARCTURN_WIDE_LEFT, false, DRIVE_SPEED_FAST);
         }
         break;
     case ATTACK_STATE_RIGHT:
@@ -385,7 +384,7 @@ static main_state_t main_state_attack(attack_state_data_t *attack_data, bool ent
         }
         if (attack_data->entered_new_state) {
             // TODO: Dist -> Drive speed
-            drive_set(DRIVE_ARCTURN_RIGHT, DRIVE_SPEED_FAST);
+            drive_set(DRIVE_ARCTURN_WIDE_RIGHT, false, DRIVE_SPEED_FAST);
         }
         break;
     }
@@ -429,22 +428,22 @@ static void set_retreat_drive(retreat_state_t retreat_state)
         drive_stop();
         break;
     case RETREAT_STATE_DRIVE_REVERSE:
-        drive_set(DRIVE_REVERSE, DRIVE_SPEED_MEDIUM);
+        drive_set(DRIVE_REVERSE, false, DRIVE_SPEED_MEDIUM);
         break;
     case RETREAT_STATE_DRIVE_FORWARD:
-        drive_set(DRIVE_FORWARD, DRIVE_SPEED_MEDIUM);
+        drive_set(DRIVE_FORWARD, false, DRIVE_SPEED_MEDIUM);
         break;
     case RETREAT_STATE_DRIVE_ROTATE_LEFT:
-        drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_SLOW);
+        drive_set(DRIVE_ROTATE_LEFT, false, DRIVE_SPEED_SLOW);
         break;
     case RETREAT_STATE_DRIVE_ROTATE_RIGHT:
-        drive_set(DRIVE_ROTATE_RIGHT, DRIVE_SPEED_SLOW);
+        drive_set(DRIVE_ROTATE_RIGHT, false, DRIVE_SPEED_SLOW);
         break;
     case RETREAT_STATE_DRIVE_ARCTURN_LEFT:
-        drive_set(DRIVE_ARCTURN_LEFT, DRIVE_SPEED_FAST);
+        drive_set(DRIVE_ARCTURN_SHARP_LEFT, false, DRIVE_SPEED_FAST);
         break;
     case RETREAT_STATE_DRIVE_ARCTURN_RIGHT:
-        drive_set(DRIVE_ARCTURN_RIGHT, DRIVE_SPEED_FAST);
+        drive_set(DRIVE_ARCTURN_SHARP_RIGHT, false, DRIVE_SPEED_FAST);
         break;
     }
 }
@@ -549,56 +548,56 @@ static void handle_test_state(test_state_t test_state)
         TRACE_WARN("Test state is none");
         break;
     case TEST_STATE_DRIVE_REVERSE:
-        drive_set(DRIVE_REVERSE, DRIVE_SPEED_FASTEST);
+        drive_set(DRIVE_REVERSE, false, DRIVE_SPEED_FASTEST);
         break;
     case TEST_STATE_DRIVE_FORWARD:
-        drive_set(DRIVE_FORWARD, DRIVE_SPEED_FASTEST);
+        drive_set(DRIVE_FORWARD, false, DRIVE_SPEED_FASTEST);
         break;
     case TEST_STATE_DRIVE_ROTATE_LEFT:
-        drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_FASTEST);
+        drive_set(DRIVE_ROTATE_LEFT, false, DRIVE_SPEED_FASTEST);
         break;
     case TEST_STATE_DRIVE_ROTATE_RIGHT:
-        drive_set(DRIVE_ROTATE_RIGHT, DRIVE_SPEED_FASTEST);
+        drive_set(DRIVE_ROTATE_RIGHT, false, DRIVE_SPEED_FASTEST);
         break;
     }
 }
 
-static main_state_t main_state_test(ir_remote_command_t remote_command)
+static main_state_t main_state_test(ir_key_t remote_command)
 {
     static test_state_t current_test_state = TEST_STATE_NONE;
     test_state_t next_test_state = current_test_state;
 
     switch (remote_command) {
-    case COMMAND_HASH:
+    case IR_KEY_HASH:
         next_test_state = TEST_STATE_NONE;
         break;
-    case COMMAND_UP:
+    case IR_KEY_UP:
         next_test_state = TEST_STATE_DRIVE_FORWARD;
         break;
-    case COMMAND_DOWN:
+    case IR_KEY_DOWN:
         next_test_state = TEST_STATE_DRIVE_REVERSE;
         break;
-    case COMMAND_LEFT:
+    case IR_KEY_LEFT:
         next_test_state = TEST_STATE_DRIVE_ROTATE_LEFT;
         break;
-    case COMMAND_RIGHT:
+    case IR_KEY_RIGHT:
         next_test_state = TEST_STATE_DRIVE_ROTATE_RIGHT;
         break;
-    case COMMAND_0:
-    case COMMAND_1:
-    case COMMAND_2:
-    case COMMAND_3:
-    case COMMAND_4:
-    case COMMAND_5:
-    case COMMAND_6:
-    case COMMAND_7:
-    case COMMAND_8:
-    case COMMAND_9:
-    case COMMAND_STAR:
-    case COMMAND_OK:
+    case IR_KEY_0:
+    case IR_KEY_1:
+    case IR_KEY_2:
+    case IR_KEY_3:
+    case IR_KEY_4:
+    case IR_KEY_5:
+    case IR_KEY_6:
+    case IR_KEY_7:
+    case IR_KEY_8:
+    case IR_KEY_9:
+    case IR_KEY_STAR:
+    case IR_KEY_OK:
         TRACE_WARN("Command not implemented");
         break;
-    case COMMAND_NONE:
+    case IR_KEY_NONE:
         break;
     }
 
@@ -656,8 +655,8 @@ void state_machine_run()
         save_detection_to_history(&sm_data.history, &detection);
 
 #ifdef MCU_TEST
-        ir_remote_command_t remote_command = ir_remote_get_command();
-        if (remote_command != COMMAND_NONE) {
+        ir_key_t remote_command = ir_remote_get_key();
+        if (remote_command != IR_KEY_NONE) {
             drive_stop();
             current_state = next_state = MAIN_STATE_TEST;
         }
@@ -692,6 +691,7 @@ void state_machine_run()
 
 #ifndef BUILD_MCU
         /* Sleep a bit to offload the host CPU */
+        // TODO: Should be millis?
         sleep_ms(1);
 #endif
     }

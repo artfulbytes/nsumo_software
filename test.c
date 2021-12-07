@@ -16,7 +16,12 @@
 #include "vl53l0x.h"
 #include "led.h"
 #include "qre1113.h"
-
+#else
+#include "microcontroller_c_bindings.h"
+#endif
+// TODO: Separate define for test vs no test...
+#if BUILD_MCU
+#if 0
 void test_dimming_led()
 {
     pwm_init();
@@ -145,28 +150,16 @@ void test_vl53l0x_multiple_time()
     }
 }
 
-void test_ir_receiver()
-{
-    ir_remote_init();
-    volatile uint16_t keypresses = 0;
-
-    for(;;)
-    {
-        if (ir_remote_get_command() != COMMAND_NONE) {
-            keypresses++;
-        }
-    }
-}
-
 void test_state_machine_ir()
 {
     state_machine_ir_init();
 
     bool show_led = true;
     ir_remote_init();
-    for(;;) {
-        volatile ir_remote_command_t ir_command = ir_remote_get_command();
-        if (ir_command != COMMAND_NONE) {
+    while (1) {
+        // TODO: remove volatile
+        volatile ir_key_t key = ir_remote_get_key();
+        if (key != IR_KEY_NONE) {
             state_machine_ir_handle_command(ir_command);
         }
         led_set_enable(LED_TEST, show_led);
@@ -205,7 +198,30 @@ void test_gpio_input()
         led_set_enable(LED_TEST, gpio_get_input(GPIO_RANGE_SENSOR_FRONT_INT));
     }
 }
+#endif
+void test_ir_receiver()
+{
+    ir_remote_init();
+    volatile uint16_t keypresses = 0;
 
+    for(;;)
+    {
+        if (ir_remote_get_key() != IR_KEY_NONE) {
+            keypresses++;
+        }
+    }
+}
+void test_drives_remote()
+{
+    ir_remote_init();
+    while (1) {
+        volatile ir_key_t key = ir_remote_get_key();
+        if (key != IR_KEY_NONE) {
+            trace("Ir key %d\n", key);
+        }
+        __delay_cycles(50000);
+    }
+}
 #endif
 
 void test_line_detection()
@@ -224,7 +240,7 @@ void test_drive_and_line_detect()
 
     const drive_speed_t speed = DRIVE_SPEED_FASTEST;
     drive_t current_drive = DRIVE_FORWARD;
-    drive_set(current_drive, speed);
+    drive_set(current_drive, false, speed);
     while (1) {
         drive_t new_drive = current_drive;
         switch (line_detection_get()) {
@@ -247,7 +263,7 @@ void test_drive_and_line_detect()
         }
 
         if (new_drive != current_drive) {
-            drive_set(new_drive, speed);
+            drive_set(new_drive, false, speed);
             current_drive = new_drive;
         }
     }
@@ -266,7 +282,7 @@ void test_rotate_and_enemy_detect()
 
         if (new_rotate != rotate) {
             if (new_rotate) {
-                drive_set(DRIVE_ROTATE_LEFT, DRIVE_SPEED_FASTEST);
+                drive_set(DRIVE_ROTATE_LEFT, false, DRIVE_SPEED_FASTEST);
             } else {
                 drive_stop();
             }
@@ -284,3 +300,11 @@ void test_enemy_detection_print()
     }
 }
 
+void test_drive_duty_cycles()
+{
+    drive_init();
+    drive_set(DRIVE_ARCTURN_WIDE_LEFT, true, DRIVE_SPEED_FASTEST);
+    while(1) {
+        millis();
+    }
+}
