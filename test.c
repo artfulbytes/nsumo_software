@@ -21,7 +21,6 @@
 #endif
 // TODO: Separate define for test vs no test...
 #if BUILD_MCU
-#if 0
 void test_dimming_led()
 {
     pwm_init();
@@ -157,10 +156,9 @@ void test_state_machine_ir()
     bool show_led = true;
     ir_remote_init();
     while (1) {
-        // TODO: remove volatile
-        volatile ir_key_t key = ir_remote_get_key();
+        ir_key_t key = ir_remote_get_key();
         if (key != IR_KEY_NONE) {
-            state_machine_ir_handle_command(ir_command);
+            state_machine_ir_handle_key(key);
         }
         led_set_enable(LED_TEST, show_led);
         show_led = !show_led;
@@ -199,6 +197,7 @@ void test_gpio_input()
     }
 }
 #endif
+#if 0
 void test_ir_receiver()
 {
     ir_remote_init();
@@ -214,15 +213,58 @@ void test_ir_receiver()
 void test_drives_remote()
 {
     ir_remote_init();
+    drive_init();
+    drive_speed_t speed = DRIVE_SPEED_SLOW;
+    drive_t drive = DRIVE_ARCTURN_SHARP_LEFT;
     while (1) {
-        volatile ir_key_t key = ir_remote_get_key();
+        const ir_key_t key = ir_remote_get_key();
         if (key != IR_KEY_NONE) {
             trace("Ir key %d\n", key);
+        } else {
+            __delay_cycles(50000);
+            continue;
         }
+        switch(key) {
+        case IR_KEY_0:
+            speed = DRIVE_SPEED_SLOW;
+            break;
+        case IR_KEY_1:
+            speed = DRIVE_SPEED_MEDIUM;
+            break;
+        case IR_KEY_2:
+            speed = DRIVE_SPEED_FAST;
+            break;
+        case IR_KEY_3:
+            speed = DRIVE_SPEED_FASTEST;
+            break;
+        case IR_KEY_4:
+            drive = DRIVE_ARCTURN_SHARP_LEFT;
+            break;
+        case IR_KEY_5:
+            drive = DRIVE_ARCTURN_MID_LEFT;
+            break;
+        case IR_KEY_6:
+            drive = DRIVE_ARCTURN_WIDE_LEFT;
+            break;
+        case IR_KEY_7:
+        case IR_KEY_8:
+        case IR_KEY_9:
+        case IR_KEY_LEFT:
+        case IR_KEY_RIGHT:
+        case IR_KEY_STAR:
+        case IR_KEY_HASH:
+        case IR_KEY_UP:
+        case IR_KEY_DOWN:
+        case IR_KEY_OK:
+        case IR_KEY_NONE:
+            drive_stop();
+            continue;
+            break;
+        }
+        drive_set(drive, false, speed);
         __delay_cycles(50000);
     }
 }
-#endif
 
 void test_line_detection()
 {
@@ -308,3 +350,4 @@ void test_drive_duty_cycles()
         millis();
     }
 }
+#endif

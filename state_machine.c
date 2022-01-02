@@ -166,6 +166,7 @@ static void save_detection_to_history(history_t *history, const detection_t *det
 
 static const char *main_state_str(main_state_t main_state)
 {
+#ifdef VERBOSE
     switch (main_state)
     {
     case MAIN_STATE_SEARCH: return "MAIN_STATE_SEARCH";
@@ -175,6 +176,9 @@ static const char *main_state_str(main_state_t main_state)
     case MAIN_STATE_TEST: return "MAIN_STATE_TEST";
 #endif
     }
+#else
+    (void)main_state;
+#endif
     return "";
 }
 
@@ -285,6 +289,7 @@ static main_state_t main_state_search(search_state_data_t *search_data, bool ent
 }
 
 /* TODO: Create more general timer module */
+
 static uint32_t attack_state_start_time = 0;
 static void attack_timer_start()
 {
@@ -652,6 +657,7 @@ void state_machine_run()
             .line = line_detection_get(),
             .enemy = enemy_detection_get()
         };
+
         save_detection_to_history(&sm_data.history, &detection);
 
 #ifdef MCU_TEST

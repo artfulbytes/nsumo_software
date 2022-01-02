@@ -24,8 +24,8 @@ int main(void)
     //test_gpio_input();
     //state_machine_run();
     //test_drives_remote();
-    test_ir_receiver();
-    //test_state_machine_ir();
+    //test_ir_receiver();
+    test_state_machine_ir();
     // TODO: Disable everything and endless loop in case of failure
     while (1);
 }

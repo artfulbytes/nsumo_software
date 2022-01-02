@@ -50,6 +50,8 @@
 
 void time_init()
 {
+    /* TODO: This shouldn't be used at the moment */
+    while(1);
     // ACLK and count to CCR0
     TA1CTL |= TASSEL_1 + MC_1;
     TA1CCR0 = 0;
@@ -61,8 +63,7 @@ void time_init()
 volatile static uint32_t watchdog_interrupt_cnt = 0;
 /* This is how GCC interrupts are declared (#pragma vector=WDT_VECTOR is for
  * TI compiler) */
-void watchdog_timer(void) __attribute__ ((interrupt (WDT_VECTOR)));
-void watchdog_timer(void)
+void __attribute__ ((interrupt(WDT_VECTOR))) watchdog_isr (void)
 {
     watchdog_interrupt_cnt++;
 }
@@ -73,7 +74,7 @@ uint32_t millis()
     /* Disable interrupts while retrieving the counter */
     IE1 &= ~WDTIE;
     /* Divide by two because the watchdog timer triggers every 0.5 ms */
-    uint32_t ms = watchdog_interrupt_cnt >> 1;
+    const uint32_t ms = watchdog_interrupt_cnt / 2;
     IE1 |= WDTIE;
     return ms;
 }

@@ -45,7 +45,7 @@ static uint16_t get_scaled_duty_cycle(uint16_t unscaled_duty_cycle)
 {
     /* Multiply with 3/4 since motors are 6V max, and when batteries are 100%
      * charged they give ~8V. */
-    return (unscaled_duty_cycle >> 2) * 3;
+    return (unscaled_duty_cycle / 4) * 3;
 }
 
 void motor_set_duty_cycle(motors_t motors, int16_t duty_cycle)

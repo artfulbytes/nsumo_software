@@ -29,13 +29,13 @@ const char *enemy_pos_str(enemy_pos_t pos)
 {
     switch (pos)
     {
-    case ENEMY_POS_NONE: return "ENEMY_POS_NONE";
-    case ENEMY_POS_FRONT_LEFT: return "ENEMY_POS_FRONT_LEFT";
-    case ENEMY_POS_FRONT: return "ENEMY_POS_FRONT";
+    case ENEMY_POS_NONE:        return "ENEMY_POS_NONE       ";
+    case ENEMY_POS_FRONT_LEFT:  return "ENEMY_POS_FRONT_LEFT ";
+    case ENEMY_POS_FRONT:       return "ENEMY_POS_FRONT      ";
     case ENEMY_POS_FRONT_RIGHT: return "ENEMY_POS_FRONT_RIGHT";
-    case ENEMY_POS_LEFT: return "ENEMY_POS_LEFT";
-    case ENEMY_POS_RIGHT: return "ENEMY_POS_RIGHT";
-    case ENEMY_POS_IMPOSSIBLE: return "ENEMY_POS_IMPOSSIBLE";
+    case ENEMY_POS_LEFT:        return "ENEMY_POS_LEFT       ";
+    case ENEMY_POS_RIGHT:       return "ENEMY_POS_RIGHT      ";
+    case ENEMY_POS_IMPOSSIBLE:  return "ENEMY_POS_IMPOSSIBLE ";
     }
     return "";
 }
@@ -44,15 +44,14 @@ const char *enemy_range_str(enemy_range_t range)
 {
     switch (range)
     {
-    case ENEMY_RANGE_NONE: return "ENEMY_RANGE_NONE";
+    case ENEMY_RANGE_NONE: return  "ENEMY_RANGE_NONE ";
     case ENEMY_RANGE_CLOSE: return "ENEMY_RANGE_CLOSE";
-    case ENEMY_RANGE_MID: return "ENEMY_RANGE_MID";
-    case ENEMY_RANGE_FAR: return "ENEMY_RANGE_FAR";
+    case ENEMY_RANGE_MID: return   "ENEMY_RANGE_MID  ";
+    case ENEMY_RANGE_FAR: return   "ENEMY_RANGE_FAR  ";
     }
     return "";
 }
 
-#include "trace.h"
 enemy_detection_t enemy_detection_get()
 {
     enemy_detection_t detection = { 0 };

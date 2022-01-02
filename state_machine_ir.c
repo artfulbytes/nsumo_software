@@ -67,6 +67,11 @@ static uint16_t state_machine_command_to_speed(robot_command_t command) {
     case ROBOT_SET_SPEED_80: return 80;
     case ROBOT_SET_SPEED_90: return 80;
     case ROBOT_SET_SPEED_100: return 100;
+    case ROBOT_FORWARD: return 0;
+    case ROBOT_LEFT: return 0;
+    case ROBOT_REVERSE: return 0;
+    case ROBOT_RIGHT: return 0;
+    case ROBOT_STOP: return 0;
     }
     return 0;
 }
@@ -143,7 +148,7 @@ static void handle_speed_command(robot_command_t speed_command)
         break;
     case STATE_FORWARD:
         motor_set_duty_cycle(MOTORS_LEFT, new_speed);
-        motor_set_duty_cycle(MOTORS_RIGHT, new_speed / 2);
+        motor_set_duty_cycle(MOTORS_RIGHT, new_speed);
         break;
     case STATE_REVERSE:
         motor_set_duty_cycle(MOTORS_LEFT, -new_speed);
