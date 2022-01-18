@@ -95,7 +95,7 @@ static robot_state_t handle_forward_command()
         motor_stop_safely();
     }
     motor_set_duty_cycle(MOTORS_LEFT, current_speed);
-    motor_set_duty_cycle(MOTORS_RIGHT, current_speed /2);
+    motor_set_duty_cycle(MOTORS_RIGHT, current_speed);
     return STATE_FORWARD;
 }
 

@@ -27,16 +27,23 @@
 
 const char *enemy_pos_str(enemy_pos_t pos)
 {
+#if BUILD_VERBOSE
     switch (pos)
     {
-    case ENEMY_POS_NONE:        return "ENEMY_POS_NONE       ";
-    case ENEMY_POS_FRONT_LEFT:  return "ENEMY_POS_FRONT_LEFT ";
-    case ENEMY_POS_FRONT:       return "ENEMY_POS_FRONT      ";
-    case ENEMY_POS_FRONT_RIGHT: return "ENEMY_POS_FRONT_RIGHT";
-    case ENEMY_POS_LEFT:        return "ENEMY_POS_LEFT       ";
-    case ENEMY_POS_RIGHT:       return "ENEMY_POS_RIGHT      ";
-    case ENEMY_POS_IMPOSSIBLE:  return "ENEMY_POS_IMPOSSIBLE ";
+    case ENEMY_POS_NONE:                    return "NONE";
+    case ENEMY_POS_FRONT_LEFT:              return "FRONT_LEFT";
+    case ENEMY_POS_FRONT:                   return "FRONT";
+    case ENEMY_POS_FRONT_RIGHT:             return "FRONT_RIGHT";
+    case ENEMY_POS_LEFT:                    return "LEFT";
+    case ENEMY_POS_RIGHT:                   return "RIGHT";
+    case ENEMY_POS_FRONT_AND_FRONT_LEFT:    return "FRONT_AND_FRONT_LEFT";
+    case ENEMY_POS_FRONT_AND_FRONT_RIGHT:   return "FRONT_AND_FRONT_RIGHT";
+    case ENEMY_POS_FRONT_ALL:               return "FRONT_ALL";
+    case ENEMY_POS_IMPOSSIBLE:              return "IMPOSSIBLE";
     }
+#else
+    (void)pos;
+#endif
     return "";
 }
 
@@ -44,10 +51,10 @@ const char *enemy_range_str(enemy_range_t range)
 {
     switch (range)
     {
-    case ENEMY_RANGE_NONE: return  "ENEMY_RANGE_NONE ";
-    case ENEMY_RANGE_CLOSE: return "ENEMY_RANGE_CLOSE";
-    case ENEMY_RANGE_MID: return   "ENEMY_RANGE_MID  ";
-    case ENEMY_RANGE_FAR: return   "ENEMY_RANGE_FAR  ";
+    case ENEMY_RANGE_NONE: return  "NONE";
+    case ENEMY_RANGE_CLOSE: return "CLOSE";
+    case ENEMY_RANGE_MID: return   "MID";
+    case ENEMY_RANGE_FAR: return   "FAR";
     }
     return "";
 }
@@ -81,37 +88,48 @@ enemy_detection_t enemy_detection_get()
     const bool right = range_right < DETECT_THRESHOLD;
 
     uint16_t range = INVALID_RANGE;
-    if (front_left && front && front_right) {
-        detection.position = ENEMY_POS_FRONT;
-        // Average
-        range = ((((range_left + range_front) >> 2) + range_right) >> 2);
-    } else if (front_left && front_right) {
-        detection.position = ENEMY_POS_IMPOSSIBLE;
-    } else if (front_left) {
-        // TODO Impossible left right
-        // TODO Should I account for front range here?
-        detection.position = ENEMY_POS_FRONT_LEFT;
-        range = range_front_left;
-    } else if (front_right) {
-        // TODO Impossible left right
-        // TODO Should I account for front range here?
-        detection.position = ENEMY_POS_FRONT_RIGHT;
-        range = range_front_right;
-    } else if (front) {
-        if (left || right) {
-            detection.position = ENEMY_POS_IMPOSSIBLE;
+    detection.position = ENEMY_POS_IMPOSSIBLE;
+    if (left) {
+        if (front_left || front || front_right || right) {
+            //detection.position = ENEMY_POS_IMPOSSIBLE;
         } else {
-            detection.position = ENEMY_POS_FRONT;
-            range = range_front;
+            detection.position = ENEMY_POS_LEFT;
+            range = range_left;
         }
-    } else if (left && right) {
-        detection.position = ENEMY_POS_IMPOSSIBLE;
-    } else if (left) {
-        detection.position = ENEMY_POS_LEFT;
-        range = range_left;
     } else if (right) {
-        detection.position = ENEMY_POS_RIGHT;
-        range = range_right;
+        if (front_left || front || front_right || left) {
+            //detection.position = ENEMY_POS_IMPOSSIBLE;
+        } else {
+            detection.position = ENEMY_POS_RIGHT;
+            range = range_right;
+        }
+    } else if (front_left && front && front_right) {
+        detection.position = ENEMY_POS_FRONT_ALL;
+        // Average
+        range = ((((range_left + range_front) / 2) + range_right) / 2);
+    } else if (front_left && front_right) {
+        //detection.position = ENEMY_POS_IMPOSSIBLE;
+    } else if (front_left) {
+        if (front) {
+            detection.position = ENEMY_POS_FRONT_AND_FRONT_LEFT;
+            // Average
+            range = (range_front_left + range_front) / 2;
+        } else {
+            detection.position = ENEMY_POS_FRONT_LEFT;
+            range = range_front_left;
+        }
+    } else if (front_right) {
+        if (front) {
+            detection.position = ENEMY_POS_FRONT_AND_FRONT_RIGHT;
+            // Average
+            range = (range_front_right + range_front) / 2;
+        } else {
+            detection.position = ENEMY_POS_FRONT_RIGHT;
+            range = range_front_right;
+        }
+    } else if (front) {
+        detection.position = ENEMY_POS_FRONT;
+        range = range_front;
     } else {
         detection.position = ENEMY_POS_NONE;
     }
@@ -127,6 +145,16 @@ enemy_detection_t enemy_detection_get()
     }
 
     return detection;
+}
+
+bool enemy_is_to_left(const enemy_detection_t *enemy)
+{
+    return enemy->position == ENEMY_POS_LEFT || enemy->position == ENEMY_POS_FRONT_LEFT || enemy->position == ENEMY_POS_FRONT_AND_FRONT_LEFT;
+}
+
+bool enemy_is_to_right(const enemy_detection_t *enemy)
+{
+    return enemy->position == ENEMY_POS_RIGHT || enemy->position == ENEMY_POS_FRONT_RIGHT || enemy->position == ENEMY_POS_FRONT_AND_FRONT_RIGHT;
 }
 
 void enemy_detection_init()

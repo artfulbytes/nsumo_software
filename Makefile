@@ -6,6 +6,7 @@ DEBUG = LD_LIBRARY_PATH=$(MSP_DEBUG_DRIVERS_DIR) $(MSP_DEBUG_BIN_DIR)/mspdebug
 GDB = $(MSPGCC_BIN_DIR)/msp430-elf-gdb
 SIZE = $(MSPGCC_BIN_DIR)/msp430-elf-size
 READELF = $(MSPGCC_BIN_DIR)/msp430-elf-readelf
+OBJDUMP = $(MSPGCC_BIN_DIR)/msp430-elf-objdump
 RM = rm
 
 ###########################################################
@@ -76,7 +77,7 @@ $(OBJ_DIR)/%.o: %.c
 ###########################################################
 # Phony targets
 ###########################################################
-.PHONY: all clean flash
+.PHONY: all clean flash mspdeb mspgdb size readelf disassemble
 
 all: $(TARGET)
 
@@ -92,8 +93,11 @@ mspdeb: $(TARGET)
 mspgdb:
 	$(GDB)
 
-size:
+size: $(TARGET)
 	$(SIZE) $(TARGET)
 
-readelf:
+readelf: $(TARGET)
 	$(READELF) -a $(TARGET)
+
+disassemble: $(TARGET)
+	$(OBJDUMP) --disassemble-all $(TARGET)

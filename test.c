@@ -19,7 +19,8 @@
 #else
 #include "microcontroller_c_bindings.h"
 #endif
-// TODO: Separate define for test vs no test...
+
+#if BUILD_TEST
 #if BUILD_MCU
 void test_dimming_led()
 {
@@ -116,23 +117,6 @@ void test_vl53l0x()
     }
 }
 
-void test_vl53l0x_multiple()
-{
-    vl53l0x_ranges_t ranges;
-    bool success = vl53l0x_init();
-    while (success) {
-        success = vl53l0x_read_range_multiple(ranges);
-        trace("left   %d"
-              "right  %d"
-              "fleft  %d"
-              "front  %d"
-              "fright %d\n",
-              ranges[VL53L0X_IDX_LEFT], ranges[VL53L0X_IDX_RIGHT],
-              ranges[VL53L0X_IDX_FRONT_LEFT], ranges[VL53L0X_IDX_FRONT],
-              ranges[VL53L0X_IDX_FRONT_RIGHT]);
-    }
-}
-
 void test_vl53l0x_multiple_time()
 {
     vl53l0x_ranges_t ranges;
@@ -146,23 +130,6 @@ void test_vl53l0x_multiple_time()
             trace("100 measures in %ld ms\n", millis()-last_millis);
             last_millis = millis();
         }
-    }
-}
-
-void test_state_machine_ir()
-{
-    state_machine_ir_init();
-
-    bool show_led = true;
-    ir_remote_init();
-    while (1) {
-        ir_key_t key = ir_remote_get_key();
-        if (key != IR_KEY_NONE) {
-            state_machine_ir_handle_key(key);
-        }
-        led_set_enable(LED_TEST, show_led);
-        show_led = !show_led;
-        __delay_cycles(50000);
     }
 }
 
@@ -196,8 +163,42 @@ void test_gpio_input()
         led_set_enable(LED_TEST, gpio_get_input(GPIO_RANGE_SENSOR_FRONT_INT));
     }
 }
-#endif
-#if 0
+
+void test_vl53l0x_multiple()
+{
+    vl53l0x_ranges_t ranges;
+    bool success = vl53l0x_init();
+    while (success) {
+        success = vl53l0x_read_range_multiple(ranges);
+        trace("left   %d"
+              "right  %d"
+              "fleft  %d"
+              "front  %d"
+              "fright %d\n",
+              ranges[VL53L0X_IDX_LEFT], ranges[VL53L0X_IDX_RIGHT],
+              ranges[VL53L0X_IDX_FRONT_LEFT], ranges[VL53L0X_IDX_FRONT],
+              ranges[VL53L0X_IDX_FRONT_RIGHT]);
+    }
+}
+
+
+void test_state_machine_ir()
+{
+    state_machine_ir_init();
+
+    bool show_led = true;
+    ir_remote_init();
+    while (1) {
+        ir_key_t key = ir_remote_get_key();
+        if (key != IR_KEY_NONE) {
+            state_machine_ir_handle_key(key);
+        }
+        led_set_enable(LED_TEST, show_led);
+        show_led = !show_led;
+        __delay_cycles(50000);
+    }
+}
+
 void test_ir_receiver()
 {
     ir_remote_init();
@@ -210,6 +211,7 @@ void test_ir_receiver()
         }
     }
 }
+
 void test_drives_remote()
 {
     ir_remote_init();
@@ -265,6 +267,8 @@ void test_drives_remote()
         __delay_cycles(50000);
     }
 }
+
+#endif
 
 void test_line_detection()
 {
@@ -345,7 +349,7 @@ void test_enemy_detection_print()
 void test_drive_duty_cycles()
 {
     drive_init();
-    drive_set(DRIVE_ARCTURN_WIDE_LEFT, true, DRIVE_SPEED_FASTEST);
+    drive_set(DRIVE_ARCTURN_WIDE_LEFT, false, DRIVE_SPEED_FASTEST);
     while(1) {
         millis();
     }

@@ -46,6 +46,7 @@ static volatile ir_state_t ir_state = STATE_INACTIVE;
 
 static ir_key_t msg_to_key(uint32_t msg)
 {
+    // TODO: Can save ~150 bytes by just checking 16 LSB bits
     switch(msg)
     {
     case 16750695: return IR_KEY_0;
@@ -69,7 +70,7 @@ static ir_key_t msg_to_key(uint32_t msg)
     return IR_KEY_NONE;
 }
 
-static inline void ir_remote_msg_buffer_add(uint32_t msg)
+static void ir_remote_msg_buffer_add(uint32_t msg)
 {
     msg_buffer[msg_buffer_head++] = msg;
     if (msg_buffer_head >= MSG_BUFFER_SIZE) {
@@ -83,7 +84,7 @@ static inline void ir_remote_msg_buffer_add(uint32_t msg)
     }
 }
 
-static inline void ir_remote_reset()
+static void ir_remote_reset()
 {
     TA1CTL = MC_0 + TACLR;
     ir_state = STATE_INACTIVE;
@@ -96,7 +97,7 @@ static inline void ir_remote_reset()
     gpio_set_interrupt_trigger(GPIO_IR_REMOTE, TRIGGER_FALLING);
 }
 
-static inline void restart_timer()
+static void restart_timer()
 {
     TA1CTL |= TACLR;
     TA1CTL = TA1CTL_CONFIG_FLAGS;
@@ -112,7 +113,7 @@ void __attribute__ ((interrupt(TIMER1_A0_VECTOR))) Timer_A (void) {
     }
 }
 
-static inline bool time_equal(uint32_t t1, uint32_t t2, uint32_t error_margin)
+static bool time_equal(uint32_t t1, uint32_t t2, uint32_t error_margin)
 {
     return (t1 > (t2 - error_margin)) && (t1 < (t2 + error_margin));
 }

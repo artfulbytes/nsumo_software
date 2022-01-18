@@ -13,8 +13,9 @@
  * range according to various sources. */
 #define PWM_PERIOD_KHZ (10)
 #define TA0CCRO_PERIOD_VALUE (TIMER_COUNT_FREQ_KHZ / PWM_PERIOD_KHZ)
+#define TA0CCR_FACTOR (TA0CCRO_PERIOD_VALUE / DUTY_CYCLE_MAX)
 #define DUTY_CYCLE_MAX (100)
-#define DUTY_CYCLE_TO_TA0CCR(duty_cycle) (duty_cycle * TA0CCRO_PERIOD_VALUE / DUTY_CYCLE_MAX)
+#define DUTY_CYCLE_TO_TA0CCR(duty_cycle) (duty_cycle * TA0CCR_FACTOR)
 
 static void set_pwm_period()
 {

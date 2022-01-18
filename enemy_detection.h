@@ -2,6 +2,7 @@
 #define ENEMY_DETECTION_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef enum enemy_pos {
     ENEMY_POS_NONE,
@@ -10,6 +11,9 @@ typedef enum enemy_pos {
     ENEMY_POS_FRONT_RIGHT,
     ENEMY_POS_LEFT,
     ENEMY_POS_RIGHT,
+    ENEMY_POS_FRONT_AND_FRONT_LEFT,
+    ENEMY_POS_FRONT_AND_FRONT_RIGHT,
+    ENEMY_POS_FRONT_ALL,
     ENEMY_POS_IMPOSSIBLE // Keep this for debugging
 } enemy_pos_t;
 
@@ -30,5 +34,7 @@ enemy_detection_t enemy_detection_get(void);
 void enemy_detection_init(void);
 const char *enemy_pos_str(enemy_pos_t pos);
 const char *enemy_range_str(enemy_range_t range);
+bool enemy_is_to_left(const enemy_detection_t *enemy);
+bool enemy_is_to_right(const enemy_detection_t *enemy);
 
 #endif /* ENEMY_DETECTION_H */

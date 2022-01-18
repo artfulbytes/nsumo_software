@@ -312,20 +312,17 @@ void gpio_register_isr(gpio_t gpio, isr_function isr)
 
 void gpio_enable_interrupt(gpio_t gpio)
 {
-    // TODO ASSRT ON GPIO 3
     volatile uint16_t pin_idx = GPIO_PIN(gpio);
     *port_interrupt_enable_registers[GPIO_PORT(gpio)] |= pin_idx;
 }
 
 void gpio_disable_interrupt(gpio_t gpio)
 {
-    // TODO ASSRT ON GPIO 3
     *port_interrupt_enable_registers[GPIO_PORT(gpio)] &= ~GPIO_PIN(gpio);
 }
 
 void gpio_set_interrupt_trigger(gpio_t gpio, trigger_t trigger)
 {
-    // TODO ASSRT ON GPIO 3
     switch (trigger)
     {
     case TRIGGER_RISING:
