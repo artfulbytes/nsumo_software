@@ -19,6 +19,7 @@ typedef struct {
  * drive. */
 static const duty_cycles_t drive_to_duty_cycle[][4] =
 {
+#if BUILD_MCU
     [DRIVE_FORWARD] =
         {
             [DRIVE_SPEED_SLOW] = {25, 25},
@@ -54,6 +55,43 @@ static const duty_cycles_t drive_to_duty_cycle[][4] =
             [DRIVE_SPEED_FAST] = {47, 60},
             [DRIVE_SPEED_FASTEST] = {78, 100},
         },
+#else
+    [DRIVE_FORWARD] =
+        {
+            [DRIVE_SPEED_SLOW] = {25, 25},
+            [DRIVE_SPEED_MEDIUM] = {80, 80},
+            [DRIVE_SPEED_FAST] = {80, 80},
+            [DRIVE_SPEED_FASTEST] = {100, 100},
+        },
+    [DRIVE_ROTATE_LEFT] =
+        {
+            [DRIVE_SPEED_SLOW] = {-25, 25},
+            [DRIVE_SPEED_MEDIUM] = {-50, 50},
+            [DRIVE_SPEED_FAST] = {-60, 60},
+            [DRIVE_SPEED_FASTEST] = {-100, 100},
+        },
+    [DRIVE_ARCTURN_SHARP_LEFT] =
+        {
+            [DRIVE_SPEED_SLOW] = {-10, 25},
+            [DRIVE_SPEED_MEDIUM] = {-10, 50},
+            [DRIVE_SPEED_FAST] = {-15, 60},
+            [DRIVE_SPEED_FASTEST] = {-20, 100},
+        },
+    [DRIVE_ARCTURN_MID_LEFT] =
+        {
+            [DRIVE_SPEED_SLOW] = {15, 25},
+            [DRIVE_SPEED_MEDIUM] = {30, 50},
+            [DRIVE_SPEED_FAST] = {55, 80},
+            [DRIVE_SPEED_FASTEST] = {50, 100},
+        },
+    [DRIVE_ARCTURN_WIDE_LEFT] =
+        {
+            [DRIVE_SPEED_SLOW] = {20, 25},
+            [DRIVE_SPEED_MEDIUM] = {39, 50},
+            [DRIVE_SPEED_FAST] = {67, 80},
+            [DRIVE_SPEED_FASTEST] = {78, 100},
+        },
+#endif
 };
 
 static void negate(drive_t drive, bool reverse, int8_t *left, int8_t *right)

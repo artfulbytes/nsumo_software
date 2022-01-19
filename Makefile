@@ -96,8 +96,9 @@ mspgdb:
 size: $(TARGET)
 	$(SIZE) $(TARGET)
 
+# List symbol table sorted by size
 readelf: $(TARGET)
-	$(READELF) -a $(TARGET)
+	$(READELF) -s $(TARGET) | sort -n -k3
 
 disassemble: $(TARGET)
 	$(OBJDUMP) --disassemble-all $(TARGET)

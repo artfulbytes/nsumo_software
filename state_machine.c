@@ -133,18 +133,6 @@ static bool valid_history_entry(const detection_t *detection)
            detection->line != LINE_DETECTION_NONE;
 }
 
-// TODO: Move to enemy_detection (enemy_is_left)
-static bool enemy_is_left(const enemy_detection_t *enemy)
-{
-    return enemy->position == ENEMY_POS_LEFT || enemy->position == ENEMY_POS_FRONT_LEFT || enemy->position == ENEMY_POS_FRONT_AND_FRONT_LEFT;
-}
-
-// TODO: Move to enemy_detection (enemy_is_right)
-static bool enemy_is_right(const enemy_detection_t *enemy)
-{
-    return enemy->position == ENEMY_POS_RIGHT || enemy->position == ENEMY_POS_FRONT_RIGHT || enemy->position == ENEMY_POS_FRONT_AND_FRONT_RIGHT;
-}
-
 static const enemy_detection_t *last_enemy_seen_left_or_right(const history_t *history)
 {
     for (uint16_t i = 0; i < HISTORY_SIZE; i++) {
@@ -152,8 +140,8 @@ static const enemy_detection_t *last_enemy_seen_left_or_right(const history_t *h
                                   (history->idx - i) :
                                   (HISTORY_SIZE + history->idx - i);
         if (valid_history_entry(&history->detections[hist_idx])) {
-            if (enemy_is_left(&history->detections[hist_idx].enemy) ||
-                enemy_is_right(&history->detections[hist_idx].enemy)) {
+            if (enemy_is_to_left(&history->detections[hist_idx].enemy) ||
+                enemy_is_to_right(&history->detections[hist_idx].enemy)) {
                 return &(history->detections[hist_idx].enemy);
             }
         } else {
@@ -210,6 +198,7 @@ static const char *main_state_str(main_state_t main_state)
     return "";
 }
 
+//#define VERBOSE
 #ifdef VERBOSE
 static const char *retreat_state_str(retreat_state_t retreat_state)
 {
@@ -222,6 +211,8 @@ static const char *retreat_state_str(retreat_state_t retreat_state)
     case RETREAT_STATE_DRIVE_ROTATE_RIGHT: return "RETREAT_STATE_DRIVE_ROTATE_RIGHT";
     case RETREAT_STATE_DRIVE_ARCTURN_LEFT: return "RETREAT_STATE_DRIVE_ARCTURN_LEFT";
     case RETREAT_STATE_DRIVE_ARCTURN_RIGHT: return "RETREAT_STATE_DRIVE_ARCTURN_RIGHT";
+    case RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT: return "RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT";
+    case RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT: return "RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT";
     }
     return "";
 }
@@ -286,7 +277,7 @@ static main_state_t main_state_search(search_state_data_t *search_data, bool ent
             if (search_data->entered_new_state) {
                 const enemy_detection_t *last_enemy = last_enemy_seen_left_or_right(hist);
                 // TODO: Account for pure left and right too?
-                if (last_enemy && enemy_is_right(last_enemy)) {
+                if (last_enemy && enemy_is_to_right(last_enemy)) {
                     drive_set(DRIVE_ROTATE_RIGHT, false, DRIVE_SPEED_MEDIUM);
                 } else {
                     drive_set(DRIVE_ROTATE_LEFT, false, DRIVE_SPEED_MEDIUM);
@@ -479,8 +470,8 @@ static const retreat_moves_t retreat_moves[] =
         .cnt = 3,
         .moves = {
             [0] = { DRIVE_REVERSE, DRIVE_SPEED_MEDIUM, 300 },
-            [1] = { DRIVE_ROTATE_RIGHT, DRIVE_SPEED_MEDIUM, 200 },
-            [2] = { DRIVE_ARCTURN_MID_LEFT, DRIVE_SPEED_MEDIUM, 500 },
+            [1] = { DRIVE_ARCTURN_SHARP_RIGHT, DRIVE_SPEED_MEDIUM, 250 },
+            [2] = { DRIVE_ARCTURN_MID_LEFT, DRIVE_SPEED_FAST, 300 },
         },
     },
     [RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT] =
@@ -488,8 +479,8 @@ static const retreat_moves_t retreat_moves[] =
         .cnt = 3,
         .moves = {
             [0] = { DRIVE_REVERSE, DRIVE_SPEED_MEDIUM, 300 },
-            [1] = { DRIVE_ROTATE_LEFT, DRIVE_SPEED_MEDIUM, 100 },
-            [2] = { DRIVE_ARCTURN_MID_RIGHT, DRIVE_SPEED_MEDIUM, 500 },
+            [1] = { DRIVE_ARCTURN_SHARP_LEFT, DRIVE_SPEED_MEDIUM, 250 },
+            [2] = { DRIVE_ARCTURN_MID_RIGHT, DRIVE_SPEED_FAST, 300 },
         },
     },
 };
@@ -501,9 +492,14 @@ static void start_retreat_move(const move_t *move)
     drive_set(move->drive, false, move->speed);
 }
 
+static const move_t *get_current_retreat_move(retreat_state_data_t *data)
+{
+    return &retreat_moves[data->current_state].moves[data->move_idx];
+}
+
 static bool is_retreat_move_done(retreat_state_data_t *data)
 {
-    return (millis() - retreat_move_start_time) >= retreat_moves[data->current_state].moves[data->move_idx].duration;
+    return (millis() - retreat_move_start_time) >= get_current_retreat_move(data)->duration;
 }
 
 static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool entered, const detection_t *detection)
@@ -513,10 +509,6 @@ static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool 
         retreat_data->current_state = RETREAT_STATE_NONE;
         next_retreat_state = RETREAT_STATE_NONE;
     }
-
-#ifdef VERBOSE
-    trace("Retreat state %s %s\n", retreat_state_str(retreat_data->current_state), line_detection_str(detection->line));
-#endif
 
     switch (detection->line) {
     case LINE_DETECTION_NONE:
@@ -549,7 +541,7 @@ static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool 
         next_retreat_state = RETREAT_STATE_DRIVE_FORWARD;
         break;
     case LINE_DETECTION_BACK_LEFT:
-        if (retreat_data->current_state == RETREAT_STATE_DRIVE_REVERSE) {
+        if (get_current_retreat_move(retreat_data)->drive == DRIVE_REVERSE) {
             // 1. Line detected by both sensors on the right before timeout
             //    This means the line is to the left
             next_retreat_state = RETREAT_STATE_DRIVE_ARCTURN_RIGHT;
@@ -561,7 +553,7 @@ static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool 
         }
         break;
     case LINE_DETECTION_BACK_RIGHT:
-        if (retreat_data->current_state == RETREAT_STATE_DRIVE_REVERSE) {
+        if (get_current_retreat_move(retreat_data)->drive == DRIVE_REVERSE) {
             // 1. Line detected by both sensors on the left before timeout
             //    This means the line is to the right
             next_retreat_state = RETREAT_STATE_DRIVE_ARCTURN_LEFT;
@@ -591,6 +583,11 @@ static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool 
     if (retreat_data->current_state != next_retreat_state
         || detection->line != LINE_DETECTION_NONE /* Keep resetting the time until we no longer detect line */
     ) {
+#ifdef VERBOSE
+        if (retreat_data->current_state != next_retreat_state) {
+            trace("New retreat state %s %s\n", retreat_state_str(retreat_data->current_state), line_detection_str(detection->line));
+        }
+#endif
         retreat_data->current_state = next_retreat_state;
         retreat_data->move_idx = 0;
         start_retreat_move(&retreat_moves[retreat_data->current_state].moves[retreat_data->move_idx]);
