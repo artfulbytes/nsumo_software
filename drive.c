@@ -23,8 +23,8 @@ static const duty_cycles_t drive_to_duty_cycle[][4] =
     [DRIVE_FORWARD] =
         {
             [DRIVE_SPEED_SLOW] = {25, 25},
-            [DRIVE_SPEED_MEDIUM] = {50, 50},
-            [DRIVE_SPEED_FAST] = {60, 60},
+            [DRIVE_SPEED_MEDIUM] = {45, 45},
+            [DRIVE_SPEED_FAST] = {55, 55},
             [DRIVE_SPEED_FASTEST] = {100, 100},
         },
     [DRIVE_ROTATE_LEFT] =
@@ -59,7 +59,7 @@ static const duty_cycles_t drive_to_duty_cycle[][4] =
     [DRIVE_FORWARD] =
         {
             [DRIVE_SPEED_SLOW] = {25, 25},
-            [DRIVE_SPEED_MEDIUM] = {80, 80},
+            [DRIVE_SPEED_MEDIUM] = {60, 60},
             [DRIVE_SPEED_FAST] = {80, 80},
             [DRIVE_SPEED_FASTEST] = {100, 100},
         },

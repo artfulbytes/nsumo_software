@@ -522,7 +522,7 @@ static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool 
         }
         break;
     case LINE_DETECTION_FRONT_RIGHT:
-        if (detection->enemy.position != ENEMY_POS_LEFT) {
+        if (detection->enemy.position != ENEMY_POS_NONE) {
             next_retreat_state = RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT;
         } else {
             next_retreat_state = RETREAT_STATE_DRIVE_REVERSE;
