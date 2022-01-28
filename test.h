@@ -1,8 +1,10 @@
 #ifndef TEST_H
 #define TEST_H
 
-#if BUILD_TEST
-#if BUILD_MCU
+#define BUILD_TEST
+
+#ifdef BUILD_TEST
+#ifdef BUILD_MCU
 void test_dimming_led(void);
 void test_leds(void);
 void test_run_motors(void);
@@ -13,7 +15,7 @@ void test_vl53l0x_multiple(void);
 void test_vl53l0x_multiple_time(void);
 void test_qre1113(void);
 void test_qre1113_time(void);
-void test_enemy_detection(void);
+void test_enemy_detection_led(void);
 void test_gpio_input(void);
 void test_state_machine_ir(void);
 void test_drives_remote(void);

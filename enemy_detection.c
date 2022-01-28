@@ -10,24 +10,19 @@
 
 #include <stdbool.h>
 
-#ifdef BUILD_MCU
-#else
-//#define MAX_VOLTAGE_RANGE_SENSOR (1.0f)
+#ifndef BUILD_MCU
 // Should match max range of the sumobot spec
 #define VOLTAGE_TO_RANGE (800)
 #endif
 
-// TODO If deffa for simulator
-#define DETECT_THRESHOLD (400) // mm
+#define DETECT_THRESHOLD (600) // mm
 #define INVALID_RANGE (8190)
-
 #define RANGE_CLOSE (100) // mm
 #define RANGE_MID (200) // mm
 #define RANGE_FAR (300) // mm
 
 const char *enemy_pos_str(enemy_pos_t pos)
 {
-#if BUILD_VERBOSE
     switch (pos)
     {
     case ENEMY_POS_NONE:                    return "NONE";
@@ -41,9 +36,6 @@ const char *enemy_pos_str(enemy_pos_t pos)
     case ENEMY_POS_FRONT_ALL:               return "FRONT_ALL";
     case ENEMY_POS_IMPOSSIBLE:              return "IMPOSSIBLE";
     }
-#else
-    (void)pos;
-#endif
     return "";
 }
 
@@ -64,51 +56,57 @@ enemy_detection_t enemy_detection_get()
     enemy_detection_t detection = { 0 };
 #ifdef BUILD_MCU
     vl53l0x_ranges_t ranges;
-    bool success = vl53l0x_read_range_multiple(ranges);
+    bool fresh_values = false;
+    bool success = vl53l0x_read_range_multiple(ranges, &fresh_values);
     if (!success) {
         return detection;
     }
 
-    const uint16_t range_left = ranges[VL53L0X_IDX_LEFT];
+    //const uint16_t range_left = ranges[VL53L0X_IDX_LEFT];
     const uint16_t range_front_left = ranges[VL53L0X_IDX_FRONT_LEFT];
     const uint16_t range_front = ranges[VL53L0X_IDX_FRONT];
     const uint16_t range_front_right = ranges[VL53L0X_IDX_FRONT_RIGHT];
-    const uint16_t range_right = ranges[VL53L0X_IDX_RIGHT];
-#else
-    const uint16_t range_left = get_voltage(VOLTAGE_LEFT_RANGE_SENSOR) * VOLTAGE_TO_RANGE;
+    //const uint16_t range_right = ranges[VL53L0X_IDX_RIGHT];
+#else /* Simulator */
+    //const uint16_t range_left = get_voltage(VOLTAGE_LEFT_RANGE_SENSOR) * VOLTAGE_TO_RANGE;
     const uint16_t range_front_left = get_voltage(VOLTAGE_FRONT_LEFT_RANGE_SENSOR) * VOLTAGE_TO_RANGE;
     const uint16_t range_front = get_voltage(VOLTAGE_FRONT_RANGE_SENSOR) * VOLTAGE_TO_RANGE;
     const uint16_t range_front_right = get_voltage(VOLTAGE_FRONT_RIGHT_RANGE_SENSOR) * VOLTAGE_TO_RANGE;
-    const uint16_t range_right = get_voltage(VOLTAGE_RIGHT_RANGE_SENSOR) * VOLTAGE_TO_RANGE;
+    //const uint16_t range_right = get_voltage(VOLTAGE_RIGHT_RANGE_SENSOR) * VOLTAGE_TO_RANGE;
 #endif
-    const bool left = range_left < DETECT_THRESHOLD;
+    //const bool left = range_left < DETECT_THRESHOLD;
     const bool front_left = range_front_left < DETECT_THRESHOLD;
     const bool front = range_front < DETECT_THRESHOLD;
     const bool front_right = range_front_right < DETECT_THRESHOLD;
-    const bool right = range_right < DETECT_THRESHOLD;
+    //const bool right = range_right < DETECT_THRESHOLD;
 
     uint16_t range = INVALID_RANGE;
     detection.position = ENEMY_POS_IMPOSSIBLE;
+/*
     if (left) {
-        if (front_left || front || front_right || right) {
-            //detection.position = ENEMY_POS_IMPOSSIBLE;
+        if (front_right || right) {
+            // Impossible
         } else {
+            // TODO: Return something else if also front_left or front
             detection.position = ENEMY_POS_LEFT;
             range = range_left;
         }
     } else if (right) {
-        if (front_left || front || front_right || left) {
-            //detection.position = ENEMY_POS_IMPOSSIBLE;
+        if (front_left || left) {
+            // Impossible
         } else {
+            // TODO: Return something else if also front_left or front
             detection.position = ENEMY_POS_RIGHT;
             range = range_right;
         }
     } else if (front_left && front && front_right) {
+*/
+    if (front_left && front && front_right) {
         detection.position = ENEMY_POS_FRONT_ALL;
         // Average
-        range = ((((range_left + range_front) / 2) + range_right) / 2);
+        range = ((((range_front_left + range_front) / 2) + range_front_right) / 2);
     } else if (front_left && front_right) {
-        //detection.position = ENEMY_POS_IMPOSSIBLE;
+        // Impossible
     } else if (front_left) {
         if (front) {
             detection.position = ENEMY_POS_FRONT_AND_FRONT_LEFT;
@@ -134,6 +132,7 @@ enemy_detection_t enemy_detection_get()
         detection.position = ENEMY_POS_NONE;
     }
 
+    // Convert range value to enum
     if (range != INVALID_RANGE) {
         if (range < RANGE_CLOSE) {
             detection.range = ENEMY_RANGE_CLOSE;
@@ -143,8 +142,12 @@ enemy_detection_t enemy_detection_get()
             detection.range = ENEMY_RANGE_FAR;
         }
     }
-
     return detection;
+}
+
+bool enemy_detected(const enemy_detection_t *enemy)
+{
+    return enemy->position != ENEMY_POS_NONE && enemy->position != ENEMY_POS_IMPOSSIBLE;
 }
 
 bool enemy_is_to_left(const enemy_detection_t *enemy)

@@ -23,6 +23,7 @@ typedef enum {
     IR_KEY_NONE,
 } ir_key_t;
 
+void ir_remote_wait_for_start_signal(void);
 void ir_remote_init(void);
 ir_key_t ir_remote_get_key(void);
 

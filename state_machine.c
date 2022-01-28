@@ -21,7 +21,7 @@
 
 #define SM_ASSERT(exp, msg) do { \
     if (!exp) { \
-        trace("Assert:"#exp" %s", msg); \
+        TRACE_NOPREFIX("Assert:"#exp" %s", msg); \
         drive_stop(); \
         while(1); \
     } \
@@ -182,41 +182,34 @@ static void save_detection_to_history(history_t *history, const detection_t *det
 
 static const char *main_state_str(main_state_t main_state)
 {
-#ifdef VERBOSE
     switch (main_state)
     {
-    case MAIN_STATE_SEARCH: return "MAIN_STATE_SEARCH";
-    case MAIN_STATE_ATTACK: return "MAIN_STATE_ATTACK";
-    case MAIN_STATE_RETREAT: return "MAIN_STATE_RETREAT";
+    case MAIN_STATE_SEARCH: return "ST_SEARCH";
+    case MAIN_STATE_ATTACK: return "ST_ATTACK";
+    case MAIN_STATE_RETREAT: return "ST_RETREAT";
 #ifdef MCU_TEST
-    case MAIN_STATE_TEST: return "MAIN_STATE_TEST";
+    case MAIN_STATE_TEST: return "ST_TEST";
 #endif
     }
-#else
-    (void)main_state;
-#endif
     return "";
 }
 
-//#define VERBOSE
-#ifdef VERBOSE
 static const char *retreat_state_str(retreat_state_t retreat_state)
 {
     switch (retreat_state)
     {
-    case RETREAT_STATE_NONE: return "RETREAT_STATE_NONE";
-    case RETREAT_STATE_DRIVE_REVERSE: return "RETREAT_STATE_DRIVE_REVERSE";
-    case RETREAT_STATE_DRIVE_FORWARD: return "RETREAT_STATE_DRIVE_FORWARD";
-    case RETREAT_STATE_DRIVE_ROTATE_LEFT: return "RETREAT_STATE_DRIVE_ROTATE_LEFT";
-    case RETREAT_STATE_DRIVE_ROTATE_RIGHT: return "RETREAT_STATE_DRIVE_ROTATE_RIGHT";
-    case RETREAT_STATE_DRIVE_ARCTURN_LEFT: return "RETREAT_STATE_DRIVE_ARCTURN_LEFT";
-    case RETREAT_STATE_DRIVE_ARCTURN_RIGHT: return "RETREAT_STATE_DRIVE_ARCTURN_RIGHT";
-    case RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT: return "RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT";
-    case RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT: return "RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT";
+    case RETREAT_STATE_NONE: return "RET_NONE";
+    case RETREAT_STATE_DRIVE_REVERSE: return "RET_REVERSE";
+    case RETREAT_STATE_DRIVE_FORWARD: return "RET_FORWARD";
+    case RETREAT_STATE_DRIVE_ROTATE_LEFT: return "RETE_ROTATE_LEFT";
+    case RETREAT_STATE_DRIVE_ROTATE_RIGHT: return "RET_ROTATE_RIGHT";
+    case RETREAT_STATE_DRIVE_ARCTURN_LEFT: return "RET_ARCTURN_LEFT";
+    case RETREAT_STATE_DRIVE_ARCTURN_RIGHT: return "RET_ARCTURN_RIGHT";
+    case RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT: return "RET_ALIGN_ENEMY_LEFT";
+    case RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT: return "RET_ALIGN_ENEMY_RIGHT";
     }
     return "";
 }
-#endif
 
 #ifdef MCU_TEST
 static const char *test_state_str(test_state_t test_state)
@@ -244,14 +237,7 @@ static uint32_t search_timer_elapsed()
     return millis() - search_state_start_time;
 }
 
-static bool search_go_to_attack(enemy_pos_t pos)
-{
-    return pos == ENEMY_POS_FRONT ||
-           pos == ENEMY_POS_FRONT_AND_FRONT_LEFT ||
-           pos == ENEMY_POS_FRONT_AND_FRONT_RIGHT ||
-           pos == ENEMY_POS_FRONT_ALL;
-}
-
+// TODO: Move these
 #define SEARCH_STATE_ROTATE_TIMEOUT (1000)
 #define SEARCH_STATE_FORWARD_TIMEOUT (3000)
 static main_state_t main_state_search(search_state_data_t *search_data, bool entered,
@@ -267,10 +253,10 @@ static main_state_t main_state_search(search_state_data_t *search_data, bool ent
     if (detection->line != LINE_DETECTION_NONE) {
         return MAIN_STATE_RETREAT;
     }
-
-    if (search_go_to_attack(detection->enemy.position)) {
+    if (enemy_detected(&detection->enemy)) {
         return MAIN_STATE_ATTACK;
     }
+
     switch (search_data->current_state) {
     case SEARCH_STATE_ROTATE:
         if (search_timer_elapsed() < SEARCH_STATE_ROTATE_TIMEOUT) {
@@ -278,9 +264,9 @@ static main_state_t main_state_search(search_state_data_t *search_data, bool ent
                 const enemy_detection_t *last_enemy = last_enemy_seen_left_or_right(hist);
                 // TODO: Account for pure left and right too?
                 if (last_enemy && enemy_is_to_right(last_enemy)) {
-                    drive_set(DRIVE_ROTATE_RIGHT, false, DRIVE_SPEED_MEDIUM);
+                    drive_set(DRIVE_ROTATE_RIGHT, false, DRIVE_SPEED_FAST);
                 } else {
-                    drive_set(DRIVE_ROTATE_LEFT, false, DRIVE_SPEED_MEDIUM);
+                    drive_set(DRIVE_ROTATE_LEFT, false, DRIVE_SPEED_FAST);
                 }
             }
         } else {
@@ -291,7 +277,7 @@ static main_state_t main_state_search(search_state_data_t *search_data, bool ent
     case SEARCH_STATE_FORWARD:
         if (search_timer_elapsed() < SEARCH_STATE_FORWARD_TIMEOUT) {
             if (search_data->entered_new_state) {
-                drive_set(DRIVE_FORWARD, false, DRIVE_SPEED_FAST);
+                drive_set(DRIVE_FORWARD, false, DRIVE_SPEED_FASTEST);
             }
         } else {
             next_search_state = SEARCH_STATE_ROTATE;
@@ -318,18 +304,6 @@ static uint32_t attack_timer_elapsed()
     return millis() - attack_state_start_time;
 }
 
-/* TODO: Attack using front and left sensors too */
-static bool is_valid_attack_enemy_pos(enemy_pos_t pos)
-{
-    if (pos == ENEMY_POS_IMPOSSIBLE) {
-        SM_ASSERT(false, "");
-        return false;
-    }
-    return pos != ENEMY_POS_NONE &&
-           pos != ENEMY_POS_LEFT &&
-           pos != ENEMY_POS_RIGHT;
-}
-
 #define ATTACK_STATE_TIMEOUT (4000)
 static main_state_t main_state_attack(attack_state_data_t *attack_data, bool entered, const detection_t *detection)
 {
@@ -338,21 +312,25 @@ static main_state_t main_state_attack(attack_state_data_t *attack_data, bool ent
     if (detection->line != LINE_DETECTION_NONE) {
         return MAIN_STATE_RETREAT;
     }
-
     const enemy_detection_t enemy = detection->enemy;
-    if (!is_valid_attack_enemy_pos(enemy.position)) {
+    if (!enemy_detected(&enemy)) {
         return MAIN_STATE_SEARCH;
     }
 
+    // TODO: Not handling enemy pos left and right even though enemy_detected returns true for those
     if (entered) {
         if (enemy.position == ENEMY_POS_FRONT || enemy.position == ENEMY_POS_FRONT_ALL) {
             attack_data->current_state = ATTACK_STATE_FORWARD;
+            // TODO is to left?
         } else if (enemy.position == ENEMY_POS_FRONT_LEFT || enemy.position == ENEMY_POS_FRONT_AND_FRONT_LEFT) {
             attack_data->current_state = ATTACK_STATE_LEFT;
+            // TODO is to right?
         } else if (enemy.position == ENEMY_POS_FRONT_RIGHT || enemy.position == ENEMY_POS_FRONT_AND_FRONT_RIGHT) {
             attack_data->current_state = ATTACK_STATE_RIGHT;
         } else {
-            SM_ASSERT(false, "");
+            // TODO: Undo this
+            return MAIN_STATE_SEARCH;
+            SM_ASSERT(false, "Unexpected enemy");
         }
         next_attack_state = attack_data->current_state;
         attack_data->entered_new_state = true;
@@ -367,12 +345,12 @@ static main_state_t main_state_attack(attack_state_data_t *attack_data, bool ent
             } else if (enemy.position == ENEMY_POS_FRONT_RIGHT || enemy.position == ENEMY_POS_FRONT_AND_FRONT_RIGHT) {
                 next_attack_state = ATTACK_STATE_RIGHT;
             } else {
-                SM_ASSERT(false, "");
+                SM_ASSERT(false, enemy_pos_str(enemy.position));
             }
             break;
         }
         if (attack_data->entered_new_state) {
-            drive_set(DRIVE_FORWARD, false, DRIVE_SPEED_FAST);
+            drive_set(DRIVE_FORWARD, false, DRIVE_SPEED_FASTEST);
         }
         break;
     case ATTACK_STATE_LEFT:
@@ -383,13 +361,13 @@ static main_state_t main_state_attack(attack_state_data_t *attack_data, bool ent
                 // Unlikely but possible
                 next_attack_state = ATTACK_STATE_RIGHT;
             } else {
-                SM_ASSERT(false, "");
+                SM_ASSERT(false, enemy_pos_str(enemy.position));
             }
             break;
         }
         if (attack_data->entered_new_state) {
-            // TODO: Dist -> Drive speed
-            drive_set(DRIVE_ARCTURN_WIDE_LEFT, false, DRIVE_SPEED_FAST);
+            // TODO: Use range to decide drive speed
+            drive_set(DRIVE_ARCTURN_WIDE_LEFT, false, DRIVE_SPEED_FASTEST);
         }
         break;
     case ATTACK_STATE_RIGHT:
@@ -405,8 +383,8 @@ static main_state_t main_state_attack(attack_state_data_t *attack_data, bool ent
             break;
         }
         if (attack_data->entered_new_state) {
-            // TODO: Dist -> Drive speed
-            drive_set(DRIVE_ARCTURN_WIDE_RIGHT, false, DRIVE_SPEED_FAST);
+            // TODO: Use range to decide drive speed
+            drive_set(DRIVE_ARCTURN_WIDE_RIGHT, false, DRIVE_SPEED_FASTEST);
         }
         break;
     }
@@ -438,7 +416,7 @@ static const retreat_moves_t retreat_moves[] =
     [RETREAT_STATE_DRIVE_REVERSE] =
     {
         .cnt = 1,
-        .moves = { [0] = { DRIVE_REVERSE, DRIVE_SPEED_MEDIUM, 300 } },
+        .moves = { [0] = { DRIVE_REVERSE, DRIVE_SPEED_FASTEST, 300 } },
     },
     [RETREAT_STATE_DRIVE_FORWARD] =
     {
@@ -575,7 +553,7 @@ static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool 
         // Weird but possible state
         // TODO: It's ambigiuous if the dohyo is in front or back. Must use
         // detect history for best guess.
-        SM_ASSERT(false, "");
+        SM_ASSERT(false, "Diagonal");
         break;
     }
 
@@ -583,11 +561,9 @@ static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool 
     if (retreat_data->current_state != next_retreat_state
         || detection->line != LINE_DETECTION_NONE /* Keep resetting the time until we no longer detect line */
     ) {
-#ifdef VERBOSE
         if (retreat_data->current_state != next_retreat_state) {
-            trace("New retreat state %s %s\n", retreat_state_str(retreat_data->current_state), line_detection_str(detection->line));
+            TRACE_NOPREFIX("New retreat state %s %s", retreat_state_str(retreat_data->current_state), line_detection_str(detection->line));
         }
-#endif
         retreat_data->current_state = next_retreat_state;
         retreat_data->move_idx = 0;
         start_retreat_move(&retreat_moves[retreat_data->current_state].moves[retreat_data->move_idx]);
@@ -705,6 +681,13 @@ static void init()
 void state_machine_run()
 {
     init();
+
+#if BUILD_MCU
+    /* This should come after sensor initilization so line measurements are
+     * ready when we start */
+    ir_remote_wait_for_start_signal();
+#endif
+
     main_state_t current_state = MAIN_STATE_SEARCH;
     main_state_t next_state = current_state;
     bool entered_new_state = true;
@@ -716,6 +699,7 @@ void state_machine_run()
             .line = line_detection_get(),
             .enemy = enemy_detection_get()
         };
+
         save_detection_to_history(&sm_data.history, &detection);
 
 #ifdef MCU_TEST
@@ -748,14 +732,14 @@ void state_machine_run()
         if (next_state != current_state) {
             current_state = next_state;
             entered_new_state = true;
-            trace("New state: %s\n", main_state_str(current_state));
+            TRACE_NOPREFIX("New state: %s", main_state_str(current_state));
         } else {
             entered_new_state = false;
         }
 
 #ifndef BUILD_MCU
         /* Sleep a bit to offload the host CPU */
-        // TODO: Should be millis?
+        // TODO: Rename to millis?
         sleep_ms(1);
 #endif
     }

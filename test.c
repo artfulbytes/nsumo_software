@@ -4,7 +4,7 @@
 #include "drive.h"
 #include "trace.h"
 
-#if BUILD_MCU
+#ifdef BUILD_MCU
 #include "motor.h"
 #include "adc.h"
 #include "pwm.h"
@@ -20,8 +20,8 @@
 #include "microcontroller_c_bindings.h"
 #endif
 
-#if BUILD_TEST
-#if BUILD_MCU
+#ifdef BUILD_TEST
+#ifdef BUILD_MCU
 void test_dimming_led()
 {
     pwm_init();
@@ -70,10 +70,10 @@ void test_qre1113()
     qre1113_voltages_t voltages = {0};
     while (1) {
         qre1113_get_voltages(&voltages);
-        trace("Line sensor front left %d\n"
+        TRACE_NOPREFIX("Line sensor front left %d\n"
               "Line sensor front right %d\n"
               "Line sensor back left %d\n"
-              "Line sensor back right %d\n",
+              "Line sensor back right %d",
               voltages.front_left, voltages.front_right,
               voltages.back_left, voltages.back_right);
         __delay_cycles(50000);
@@ -88,7 +88,7 @@ void test_qre1113_time()
     while (1) {
         uint32_t sample_cnt = adc_total_sample_cnt();
         if (sample_cnt - last_sample_cnt >= 100) {
-            trace("%d samples in %d ms\n", sample_cnt - last_sample_cnt, millis() - last_millis);
+            TRACE_NOPREFIX("%d samples in %d ms", sample_cnt - last_sample_cnt, millis() - last_millis);
             last_sample_cnt = sample_cnt;
             last_millis = millis();
         }
@@ -106,17 +106,33 @@ void test_vl53l0x()
         success &= vl53l0x_read_range_single(VL53L0X_IDX_RIGHT, &ranges[VL53L0X_IDX_RIGHT]);
         success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_LEFT, &ranges[VL53L0X_IDX_FRONT_LEFT]);
         success &= vl53l0x_read_range_single(VL53L0X_IDX_FRONT_RIGHT, &ranges[VL53L0X_IDX_FRONT_RIGHT]);
-        trace("Range sensor left %d\n"
+        TRACE_NOPREFIX("Range sensor left %d\n"
               "Range sensor right %d\n"
               "Range sensor front left %d\n"
               "Range sensor front %d\n"
-              "Range sensor front right %d\n",
+              "Range sensor front right %d",
               ranges[VL53L0X_IDX_LEFT], ranges[VL53L0X_IDX_RIGHT],
               ranges[VL53L0X_IDX_FRONT_LEFT], ranges[VL53L0X_IDX_FRONT],
               ranges[VL53L0X_IDX_FRONT_RIGHT]);
     }
 }
 
+void test_enemy_detection_led()
+{
+    led_init();
+    enemy_detection_init();
+    while (1) {
+        enemy_detection_t detection = enemy_detection_get();
+        if (detection.position != ENEMY_POS_NONE) {
+            TRACE_NOPREFIX("%s %s", enemy_pos_str(detection.position), enemy_range_str(detection.range));
+            led_set_enable(LED_TEST, true);
+        } else {
+            led_set_enable(LED_TEST, false);
+        }
+    }
+}
+
+#if 0
 void test_vl53l0x_multiple_time()
 {
     vl53l0x_ranges_t ranges;
@@ -132,20 +148,7 @@ void test_vl53l0x_multiple_time()
         }
     }
 }
-
-void test_enemy_detection()
-{
-    led_init();
-    enemy_detection_init();
-    while (1) {
-        enemy_detection_t detection = enemy_detection_get();
-        if (detection.position == ENEMY_POS_FRONT) {
-            led_set_enable(LED_TEST, true);
-        } else {
-            led_set_enable(LED_TEST, false);
-        }
-    }
-}
+#endif
 
 void test_gpio_input()
 {
@@ -168,19 +171,19 @@ void test_vl53l0x_multiple()
 {
     vl53l0x_ranges_t ranges;
     bool success = vl53l0x_init();
+    bool fresh_values = false;
     while (success) {
-        success = vl53l0x_read_range_multiple(ranges);
-        trace("left   %d"
+        success = vl53l0x_read_range_multiple(ranges, &fresh_values);
+        TRACE_NOPREFIX("left   %d"
               "right  %d"
               "fleft  %d"
               "front  %d"
-              "fright %d\n",
+              "fright %d",
               ranges[VL53L0X_IDX_LEFT], ranges[VL53L0X_IDX_RIGHT],
               ranges[VL53L0X_IDX_FRONT_LEFT], ranges[VL53L0X_IDX_FRONT],
               ranges[VL53L0X_IDX_FRONT_RIGHT]);
     }
 }
-
 
 void test_state_machine_ir()
 {
@@ -221,7 +224,7 @@ void test_drives_remote()
     while (1) {
         const ir_key_t key = ir_remote_get_key();
         if (key != IR_KEY_NONE) {
-            trace("Ir key %d\n", key);
+            TRACE_NOPREFIX("Ir key %d", key);
         } else {
             __delay_cycles(50000);
             continue;
@@ -267,15 +270,14 @@ void test_drives_remote()
         __delay_cycles(50000);
     }
 }
-
-#endif
+#endif // BUILD_MCU
 
 void test_line_detection()
 {
     line_detection_init();
     while (1) {
         line_detection_t line_detection = line_detection_get();
-        trace("%s\n", line_detection_str(line_detection));
+        TRACE_NOPREFIX("%s", line_detection_str(line_detection));
     }
 }
 
@@ -342,7 +344,7 @@ void test_enemy_detection_print()
     enemy_detection_init();
     while (1) {
         enemy_detection_t detection = enemy_detection_get();
-        trace("%s %s\n", enemy_pos_str(detection.position), enemy_range_str(detection.range));
+        TRACE_NOPREFIX("%s %s", enemy_pos_str(detection.position), enemy_range_str(detection.range));
     }
 }
 
@@ -354,4 +356,4 @@ void test_drive_duty_cycles()
         millis();
     }
 }
-#endif
+#endif // BUILD_TEST

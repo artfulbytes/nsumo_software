@@ -18,20 +18,20 @@
 // TODO: Make this a function instead...
 static char* line_detection_str_map[] =
 {
-    [LINE_DETECTION_NONE] =            "LINE_NONE          ",
-    [LINE_DETECTION_FRONT] =           "LINE_FRONT         ",
-    [LINE_DETECTION_BACK] =            "LINE_BACK          ",
-    [LINE_DETECTION_FRONT_LEFT] =      "LINE_FRONT_LEFT    ",
-    [LINE_DETECTION_BACK_LEFT] =       "LINE_BACK_LEFT     ",
-    [LINE_DETECTION_FRONT_RIGHT] =     "LINE_FRONT_RIGHT   ",
-    [LINE_DETECTION_BACK_RIGHT] =      "LINE_BACK_RIGHT    ",
-    [LINE_DETECTION_LEFT] =            "LINE_LEFT          ",
-    [LINE_DETECTION_RIGHT] =           "LINE_RIGHT         ",
-    [LINE_DETECTION_DIAGONAL_LEFT] =   "LINE_DIAGONALLEFT  ",
-    [LINE_DETECTION_DIAGONAL_RIGHT] =  "LINE_DIAGONAL_RIGHT"
+    [LINE_DETECTION_NONE] = "NONE",
+    [LINE_DETECTION_FRONT] = "FRONT",
+    [LINE_DETECTION_BACK] = "BACK",
+    [LINE_DETECTION_FRONT_LEFT] = "FRONT_LEFT",
+    [LINE_DETECTION_BACK_LEFT] = "BACK_LEFT",
+    [LINE_DETECTION_FRONT_RIGHT] = "FRONT_RIGHT",
+    [LINE_DETECTION_BACK_RIGHT] = "BACK_RIGHT",
+    [LINE_DETECTION_LEFT] = "LEFT",
+    [LINE_DETECTION_RIGHT] = "RIGHT",
+    [LINE_DETECTION_DIAGONAL_LEFT] = "DIAGONALLEFT",
+    [LINE_DETECTION_DIAGONAL_RIGHT] = "DIAGONAL_RIGHT"
 };
 
-char* line_detection_str(line_detection_t line_detection)
+const char* line_detection_str(line_detection_t line_detection)
 {
     return line_detection_str_map[line_detection];
 }

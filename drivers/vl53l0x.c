@@ -62,21 +62,11 @@ typedef enum
 
 static const vl53l0x_info_t vl53l0x_infos[] =
 {
-#ifdef VL53L0X_FRONT
     [VL53L0X_IDX_FRONT] = { .addr = 0x30, .xshut_gpio = GPIO_XSHUT_FRONT },
-#endif
-#ifdef VL53L0X_LEFT
     [VL53L0X_IDX_LEFT] = { .addr = 0x31, .xshut_gpio = GPIO_XSHUT_LEFT },
-#endif
-#ifdef VL53L0X_RIGHT
     [VL53L0X_IDX_RIGHT] = { .addr = 0x32, .xshut_gpio = GPIO_XSHUT_RIGHT },
-#endif
-#ifdef VL53L0X_FRONT_RIGHT
     [VL53L0X_IDX_FRONT_RIGHT] = { .addr = 0x33, .xshut_gpio = GPIO_XSHUT_FRONT_RIGHT },
-#endif
-#ifdef VL53L0X_FRONT_LEFT
     [VL53L0X_IDX_FRONT_LEFT] = { .addr = 0x34, .xshut_gpio = GPIO_XSHUT_FRONT_LEFT },
-#endif
 };
 
 static uint8_t stop_variable = 0;
@@ -432,7 +422,6 @@ static bool configure_interrupt()
     return true;
 }
 
-#ifdef VL53L0X_FRONT
 typedef enum
 {
     STATUS_MULTIPLE_NOT_STARTED,
@@ -461,7 +450,6 @@ static void configure_front_sensor_interrupt()
     gpio_set_interrupt_trigger(GPIO_RANGE_SENSOR_FRONT_INT, TRIGGER_FALLING);
     gpio_register_isr(GPIO_RANGE_SENSOR_FRONT_INT, front_measurement_done_isr);
 }
-#endif
 
 /**
  * Enable (or disable) specific steps in the sequence
@@ -630,31 +618,21 @@ static bool init_addresses()
     configure_xshut_pins();
 
     /* Wake each sensor up one by one and set a unique address for each one */
-#ifdef VL53L0X_FRONT
     if (!init_address(VL53L0X_IDX_FRONT)) {
         return false;
     }
-#endif
-#ifdef VL53L0X_LEFT
     if (!init_address(VL53L0X_IDX_LEFT)) {
         return false;
     }
-#endif
-#ifdef VL53L0X_RIGHT
     if (!init_address(VL53L0X_IDX_RIGHT)) {
         return false;
     }
-#endif
-#ifdef VL53L0X_FRONT_LEFT
     if (!init_address(VL53L0X_IDX_FRONT_LEFT)) {
         return false;
     }
-#endif
-#ifdef VL53L0X_FRONT_RIGHT
     if (!init_address(VL53L0X_IDX_FRONT_RIGHT)) {
         return false;
     }
-#endif
 
     return true;
 }
@@ -671,11 +649,9 @@ static bool init_config(vl53l0x_idx_t idx)
     if (!perform_ref_calibration()) {
         return false;
     }
-#ifdef VL53L0X_FRONT
     if (idx == VL53L0X_IDX_FRONT) {
         configure_front_sensor_interrupt();
     }
-#endif
     return true;
 }
 
@@ -691,31 +667,21 @@ bool vl53l0x_init()
     if (!init_addresses()) {
         return false;
     }
-#ifdef VL53L0X_FRONT
     if (!init_config(VL53L0X_IDX_FRONT)) {
         return false;
     }
-#endif
-#ifdef VL53L0X_LEFT
     if (!init_config(VL53L0X_IDX_LEFT)) {
         return false;
     }
-#endif
-#ifdef VL53L0X_RIGHT
     if (!init_config(VL53L0X_IDX_RIGHT)) {
         return false;
     }
-#endif
-#ifdef VL53L0X_FRONT_LEFT
     if (!init_config(VL53L0X_IDX_FRONT_LEFT)) {
         return false;
     }
-#endif
-#ifdef VL53L0X_FRONT_RIGHT
     if (!init_config(VL53L0X_IDX_FRONT_RIGHT)) {
         return false;
     }
-#endif
     return true;
 }
 
@@ -761,6 +727,15 @@ static bool pollwait_sysrange()
     return success;
 }
 
+static bool is_sysrange_done(vl53l0x_idx_t idx)
+{
+    bool success = false;
+    i2c_set_slave_address(vl53l0x_infos[idx].addr);
+    uint8_t interrupt_status = 0;
+    success = i2c_read_addr8_data8(REG_RESULT_INTERRUPT_STATUS, &interrupt_status);
+    return success && (interrupt_status & 0x07);
+}
+
 static bool read_range(vl53l0x_idx_t idx, uint16_t *range)
 {
     bool success = false;
@@ -795,25 +770,17 @@ bool vl53l0x_read_range_single(vl53l0x_idx_t idx, uint16_t *range)
     return read_range(idx, range);
 }
 
-static bool start_sysrange_multiple()
+bool start_measuring_multiple()
 {
-    bool success = true;
-#ifdef VL53L0X_FRONT
+    if (status_multiple == STATUS_MULTIPLE_MEASURING) {
+        return false;
+    }
     status_multiple = STATUS_MULTIPLE_MEASURING;
-    success &= start_sysrange(VL53L0X_IDX_FRONT);
-#endif
-#ifdef VL53L0X_LEFT
-    success &= start_sysrange(VL53L0X_IDX_LEFT);
-#endif
-#ifdef VL53L0X_RIGHT
-    success &= start_sysrange(VL53L0X_IDX_RIGHT);
-#endif
-#ifdef VL53L0X_FRONT_LEFT
+    bool success = start_sysrange(VL53L0X_IDX_FRONT);
+    //success &= start_sysrange(VL53L0X_IDX_LEFT);
+    //success &= start_sysrange(VL53L0X_IDX_RIGHT);
     success &= start_sysrange(VL53L0X_IDX_FRONT_LEFT);
-#endif
-#ifdef VL53L0X_FRONT_RIGHT
     success &= start_sysrange(VL53L0X_IDX_FRONT_RIGHT);
-#endif
     return success;
 }
 
@@ -829,48 +796,45 @@ static vl53l0x_ranges_t latest_ranges = { VL53L0X_OUT_OF_RANGE };
  *    - Return old values
  * 4. Update measurement ready on interrupt
  */
-bool vl53l0x_read_range_multiple(vl53l0x_ranges_t ranges)
+bool vl53l0x_read_range_multiple(vl53l0x_ranges_t ranges, bool *fresh_values)
 {
-#ifdef VL53L0X_FRONT
     if (status_multiple == STATUS_MULTIPLE_NOT_STARTED) {
-#endif
-        if (!start_sysrange_multiple()) {
+        if (!start_measuring_multiple()) {
             return false;
         }
-#ifdef VL53L0X_FRONT
         /* Block here the first time */
         while (status_multiple != STATUS_MULTIPLE_DONE);
     }
 
-    if (status_multiple == STATUS_MULTIPLE_DONE) {
-#endif
-        bool success = true;
-#ifdef VL53L0X_FRONT
-        success &= read_range(VL53L0X_IDX_FRONT, &latest_ranges[VL53L0X_IDX_FRONT]);
-#endif
-#ifdef VL53L0X_LEFT
-        success &= read_range(VL53L0X_IDX_LEFT, &latest_ranges[VL53L0X_IDX_LEFT]);
-#endif
-#ifdef VL53L0X_RIGHT
-        success &= read_range(VL53L0X_IDX_RIGHT, &latest_ranges[VL53L0X_IDX_RIGHT]);
-#endif
-#ifdef VL53L0X_FRONT_LEFT
-        success &= read_range(VL53L0X_IDX_FRONT_LEFT, &latest_ranges[VL53L0X_IDX_FRONT_LEFT]);
-#endif
-#ifdef VL53L0X_FRONT_RIGHT
-        success &= read_range(VL53L0X_IDX_FRONT_RIGHT, &latest_ranges[VL53L0X_IDX_FRONT_RIGHT]);
-#endif
-#ifdef VL53L0X_FRONT
-        if (success) {
-            success = start_sysrange_multiple();
+    if (status_multiple == STATUS_MULTIPLE_DONE
+        //&& is_sysrange_done(VL53L0X_IDX_FRONT) // We already know front is done because of its interrupt
+        //&& is_sysrange_done(VL53L0X_IDX_LEFT)
+        //&& is_sysrange_done(VL53L0X_IDX_RIGHT)
+        && is_sysrange_done(VL53L0X_IDX_FRONT_LEFT)
+        && is_sysrange_done(VL53L0X_IDX_FRONT_RIGHT)
+
+        ) {
+
+        if (!is_sysrange_done(VL53L0X_IDX_FRONT)) {
+            // TODO: Keep this sanity check here for some time to ensure this is always true
+            while(1);
         }
-#endif
+
+        bool success = read_range(VL53L0X_IDX_FRONT, &latest_ranges[VL53L0X_IDX_FRONT]);
+        //success &= read_range(VL53L0X_IDX_LEFT, &latest_ranges[VL53L0X_IDX_LEFT]);
+        //success &= read_range(VL53L0X_IDX_RIGHT, &latest_ranges[VL53L0X_IDX_RIGHT]);
+        success &= read_range(VL53L0X_IDX_FRONT_LEFT, &latest_ranges[VL53L0X_IDX_FRONT_LEFT]);
+        success &= read_range(VL53L0X_IDX_FRONT_RIGHT, &latest_ranges[VL53L0X_IDX_FRONT_RIGHT]);
+        if (success) {
+            success = start_measuring_multiple();
+        }
         if (!success) {
             return false;
         }
-#ifdef VL53L0X_FRONT
+        *fresh_values = true;
+    } else {
+        *fresh_values = false;
     }
-#endif
     for (int i = 0; i < VL53L0X_IDX_COUNT; i++) {
         ranges[i] = latest_ranges[i];
     }

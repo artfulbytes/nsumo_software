@@ -6,15 +6,13 @@
 int main(void)
 {
     hw_init();
-    if (!trace_init()) {
+    if (!TRACE_INIT()) {
         while (1);
     }
-    trace("Booted\n");
+    TRACE_NOPREFIX("Booted");
 
     state_machine_run();
-    //test_vl53l0x_multiple();
-    //test_state_machine_ir();
-    //test_drives_remote();
+
     // TODO: Disable everything and endless loop in case of failure
     while (1);
 }

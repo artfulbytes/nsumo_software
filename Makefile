@@ -53,12 +53,14 @@ SOURCES = main.c \
 
 OBJECT_NAMES = $(SOURCES:.c=.o)
 OBJECTS = $(patsubst %,$(OBJ_DIR)/%,$(OBJECT_NAMES))
+# Allow passing macro defines as parameter to make (e.g. "make DEFINES="BUILD_TEST")
+LOCAL_DEFINES = $(addprefix -D,$(DEFINES))
 
 ###########################################################
 # Flags
 ###########################################################
 MCU = msp430g2553
-CFLAGS = -mmcu=$(MCU) $(addprefix -I,$(INCLUDE_DIRS)) -DBUILD_MCU -DPRINTF_INCLUDE_CONFIG_H -Og -mmcu=msp430g2553 -Wall
+CFLAGS += -mmcu=$(MCU) $(addprefix -I,$(INCLUDE_DIRS)) -DBUILD_MCU $(LOCAL_DEFINES) -DPRINTF_INCLUDE_CONFIG_H -Og -mmcu=msp430g2553 -Wall
 LDFLAGS = -mmcu=$(MCU) $(addprefix -L,$(LIB_DIRS)) -Wl,--gc-sections
 
 ###########################################################
@@ -97,7 +99,7 @@ size: $(TARGET)
 	$(SIZE) $(TARGET)
 
 # List symbol table sorted by size
-readelf: $(TARGET)
+symbols: $(TARGET)
 	$(READELF) -s $(TARGET) | sort -n -k3
 
 disassemble: $(TARGET)

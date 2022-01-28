@@ -196,17 +196,6 @@ static void ir_remote_isr() {
     }
 }
 
-void ir_remote_init()
-{
-    gpio_enable_interrupt(GPIO_IR_REMOTE);
-    gpio_set_interrupt_trigger(GPIO_IR_REMOTE, TRIGGER_FALLING);
-    gpio_register_isr(GPIO_IR_REMOTE, ir_remote_isr);
-
-    TA1CCTL0 = CCIE;  /* TACCR0 interrupt enabled */
-    TA1CTL = TA1CTL_CONFIG_FLAGS;
-    TA1CCR0 = T_MAX_TICKS; /* (Interrupt after T_MAX_USEC) */
-}
-
 ir_key_t ir_remote_get_key()
 {
     gpio_disable_interrupt(GPIO_IR_REMOTE);
@@ -220,4 +209,28 @@ ir_key_t ir_remote_get_key()
     }
     gpio_enable_interrupt(GPIO_IR_REMOTE);
     return key;
+}
+
+void ir_remote_wait_for_start_signal()
+{
+    /* For now, let any keypress from the remote control represent a
+     * start signal */
+    ir_remote_init();
+    while (ir_remote_get_key() == IR_KEY_NONE);
+}
+
+static bool inited = false;
+void ir_remote_init()
+{
+    if (inited) {
+        return;
+    }
+    gpio_enable_interrupt(GPIO_IR_REMOTE);
+    gpio_set_interrupt_trigger(GPIO_IR_REMOTE, TRIGGER_FALLING);
+    gpio_register_isr(GPIO_IR_REMOTE, ir_remote_isr);
+
+    TA1CCTL0 = CCIE;  /* TACCR0 interrupt enabled */
+    TA1CTL = TA1CTL_CONFIG_FLAGS;
+    TA1CCR0 = T_MAX_TICKS; /* (Interrupt after T_MAX_USEC) */
+    inited = true;
 }

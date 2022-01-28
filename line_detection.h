@@ -17,6 +17,6 @@ typedef enum {
 
 void line_detection_init(void);
 line_detection_t line_detection_get(void);
-char* line_detection_str(line_detection_t line_detection);
+const char* line_detection_str(line_detection_t line_detection);
 
 #endif /* LINE_DETECTION_H */
