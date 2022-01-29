@@ -12,7 +12,7 @@
 #include "range_sensor.h"
 #include "ir_remote.h"
 #include "state_machine_ir.h"
-#include "time.h"
+#include "millis.h"
 #include "vl53l0x.h"
 #include "led.h"
 #include "qre1113.h"

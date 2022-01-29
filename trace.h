@@ -2,7 +2,6 @@
 #define TRACE_H
 
 #include "stdbool.h"
-#include "defines.h"
 #include <stdarg.h>
 
 /* This should be used for printing, because we really don't want to

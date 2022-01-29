@@ -160,6 +160,11 @@ bool enemy_is_to_right(const enemy_detection_t *enemy)
     return enemy->position == ENEMY_POS_RIGHT || enemy->position == ENEMY_POS_FRONT_RIGHT || enemy->position == ENEMY_POS_FRONT_AND_FRONT_RIGHT;
 }
 
+bool enemy_is_to_front(const enemy_detection_t *enemy)
+{
+    return enemy->position == ENEMY_POS_FRONT || enemy->position == ENEMY_POS_FRONT_ALL;
+}
+
 void enemy_detection_init()
 {
 #if BUILD_MCU

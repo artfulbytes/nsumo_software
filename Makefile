@@ -44,12 +44,13 @@ SOURCES = main.c \
           drive.c \
           state_machine.c \
           state_machine_ir.c \
-          drivers/time.c \
+          drivers/millis.c \
           enemy_detection.c \
           line_detection.c \
           test.c \
           trace.c \
           external/printf/printf.c \
+          timer.c \
 
 OBJECT_NAMES = $(SOURCES:.c=.o)
 OBJECTS = $(patsubst %,$(OBJ_DIR)/%,$(OBJECT_NAMES))

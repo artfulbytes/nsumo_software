@@ -3,9 +3,9 @@
 #include "drive.h"
 #include "enemy_detection.h"
 #include "line_detection.h"
-#include "time.h"
 #include "trace.h"
 #include "ir_remote.h"
+#include "timer.h"
 #else
 #include "NsumoController/nsumo/state_machine.h"
 #include "microcontroller_c_bindings.h"
@@ -14,6 +14,7 @@
 #include "NsumoController/nsumo/line_detection.h"
 #include "NsumoController/nsumo/enemy_detection.h"
 #include "NsumoController/nsumo/trace.h"
+#include "NsumoController/nsumo/timer.h"
 #endif
 
 #include <stdbool.h>
@@ -27,12 +28,15 @@
     } \
 } while (0)
 #define HISTORY_SIZE (8)
+#define SEARCH_STATE_ROTATE_TIMEOUT (1000)
+#define SEARCH_STATE_FORWARD_TIMEOUT (3000)
+#define ATTACK_STATE_TIMEOUT (4000)
 
 typedef enum state {
     MAIN_STATE_SEARCH,
     MAIN_STATE_ATTACK,
     MAIN_STATE_RETREAT,
-#if MCU_TEST
+#if MCU_TEST_STATE
     MAIN_STATE_TEST
 #endif
 } main_state_t;
@@ -60,6 +64,7 @@ typedef enum {
     RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT,
 } retreat_state_t;
 
+#if MCU_TEST_STATE
 typedef enum {
     TEST_STATE_NONE,
     TEST_STATE_DRIVE_REVERSE,
@@ -67,24 +72,20 @@ typedef enum {
     TEST_STATE_DRIVE_ROTATE_LEFT,
     TEST_STATE_DRIVE_ROTATE_RIGHT,
 } test_state_t;
-
-// TODO: Can pack this in a single byte to save some space
-typedef struct
-{
-    line_detection_t line;
-    enemy_detection_t enemy;
-} detection_t;
+#endif
 
 typedef struct
 {
     search_state_t current_state;
     bool entered_new_state;
+    timer_t timer;
 } search_state_data_t;
 
 typedef struct
 {
     attack_state_t current_state;
     bool entered_new_state;
+    timer_t timer;
 } attack_state_data_t;
 
 typedef struct
@@ -104,7 +105,14 @@ typedef struct
 {
     retreat_state_t current_state;
     uint8_t move_idx;
+    timer_t timer;
 } retreat_state_data_t;
+
+typedef struct
+{
+    line_detection_t line;
+    enemy_detection_t enemy;
+} detection_t;
 
 typedef struct
 {
@@ -187,7 +195,7 @@ static const char *main_state_str(main_state_t main_state)
     case MAIN_STATE_SEARCH: return "ST_SEARCH";
     case MAIN_STATE_ATTACK: return "ST_ATTACK";
     case MAIN_STATE_RETREAT: return "ST_RETREAT";
-#ifdef MCU_TEST
+#ifdef MCU_TEST_STATE
     case MAIN_STATE_TEST: return "ST_TEST";
 #endif
     }
@@ -211,7 +219,7 @@ static const char *retreat_state_str(retreat_state_t retreat_state)
     return "";
 }
 
-#ifdef MCU_TEST
+#ifdef MCU_TEST_STATE
 static const char *test_state_str(test_state_t test_state)
 {
     switch (test_state)
@@ -226,26 +234,80 @@ static const char *test_state_str(test_state_t test_state)
 }
 #endif
 
-static uint32_t search_state_start_time = 0;
-static void search_timer_start()
+static const retreat_moves_t retreat_moves[] =
 {
-    search_state_start_time = millis();
+    [RETREAT_STATE_NONE] = { .cnt = 0 },
+    [RETREAT_STATE_DRIVE_REVERSE] =
+    {
+        .cnt = 1,
+        .moves = { [0] = { DRIVE_REVERSE, DRIVE_SPEED_FASTEST, 300 } },
+    },
+    [RETREAT_STATE_DRIVE_FORWARD] =
+    {
+        .cnt = 1,
+        .moves = { [0] = { DRIVE_FORWARD, DRIVE_SPEED_MEDIUM, 300 } },
+    },
+    [RETREAT_STATE_DRIVE_ROTATE_LEFT] =
+    {
+        .cnt = 1,
+        .moves = { [0] = { DRIVE_ROTATE_LEFT, DRIVE_SPEED_MEDIUM, 150 } },
+    },
+    [RETREAT_STATE_DRIVE_ROTATE_RIGHT] =
+    {
+        .cnt = 1,
+        .moves = { [0] = { DRIVE_ROTATE_RIGHT, DRIVE_SPEED_MEDIUM, 150 } },
+    },
+    [RETREAT_STATE_DRIVE_ARCTURN_LEFT] =
+    {
+        .cnt = 1,
+        .moves = { [0] = { DRIVE_ARCTURN_SHARP_LEFT, DRIVE_SPEED_MEDIUM, 150 } },
+    },
+    [RETREAT_STATE_DRIVE_ARCTURN_RIGHT] =
+    {
+        .cnt = 1,
+        .moves = { [0] = { DRIVE_ARCTURN_SHARP_RIGHT, DRIVE_SPEED_MEDIUM, 150 } },
+    },
+    [RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT] =
+    {
+        .cnt = 3,
+        .moves = {
+            [0] = { DRIVE_REVERSE, DRIVE_SPEED_MEDIUM, 300 },
+            [1] = { DRIVE_ARCTURN_SHARP_RIGHT, DRIVE_SPEED_MEDIUM, 250 },
+            [2] = { DRIVE_ARCTURN_MID_LEFT, DRIVE_SPEED_FAST, 300 },
+        },
+    },
+    [RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT] =
+    {
+        .cnt = 3,
+        .moves = {
+            [0] = { DRIVE_REVERSE, DRIVE_SPEED_MEDIUM, 300 },
+            [1] = { DRIVE_ARCTURN_SHARP_LEFT, DRIVE_SPEED_MEDIUM, 250 },
+            [2] = { DRIVE_ARCTURN_MID_RIGHT, DRIVE_SPEED_FAST, 300 },
+        },
+    },
+};
+static void start_retreat_move(retreat_state_data_t *data, const move_t *move)
+{
+    timer_start(&data->timer);
+    drive_set(move->drive, false, move->speed);
 }
 
-static uint32_t search_timer_elapsed()
+static const move_t *get_current_retreat_move(retreat_state_data_t *data)
 {
-    return millis() - search_state_start_time;
+    return &retreat_moves[data->current_state].moves[data->move_idx];
 }
 
-// TODO: Move these
-#define SEARCH_STATE_ROTATE_TIMEOUT (1000)
-#define SEARCH_STATE_FORWARD_TIMEOUT (3000)
+static bool is_retreat_move_done(retreat_state_data_t *data)
+{
+    return timer_ms_elapsed(&data->timer) >= get_current_retreat_move(data)->duration;
+}
+
 static main_state_t main_state_search(search_state_data_t *search_data, bool entered,
                                       const detection_t *detection, const history_t *hist)
 {
     search_state_t next_search_state = search_data->current_state;
     if (entered) {
-        search_timer_start();
+        timer_start(&search_data->timer);
         search_data->current_state = SEARCH_STATE_ROTATE;
         next_search_state = search_data->current_state;
         search_data->entered_new_state = true;
@@ -259,7 +321,7 @@ static main_state_t main_state_search(search_state_data_t *search_data, bool ent
 
     switch (search_data->current_state) {
     case SEARCH_STATE_ROTATE:
-        if (search_timer_elapsed() < SEARCH_STATE_ROTATE_TIMEOUT) {
+        if (timer_ms_elapsed(&search_data->timer) < SEARCH_STATE_ROTATE_TIMEOUT) {
             if (search_data->entered_new_state) {
                 const enemy_detection_t *last_enemy = last_enemy_seen_left_or_right(hist);
                 // TODO: Account for pure left and right too?
@@ -275,7 +337,7 @@ static main_state_t main_state_search(search_state_data_t *search_data, bool ent
         // TODO: Arc turn if detected on left or right (let distance determine sharpness)
         break;
     case SEARCH_STATE_FORWARD:
-        if (search_timer_elapsed() < SEARCH_STATE_FORWARD_TIMEOUT) {
+        if (timer_ms_elapsed(&search_data->timer) < SEARCH_STATE_FORWARD_TIMEOUT) {
             if (search_data->entered_new_state) {
                 drive_set(DRIVE_FORWARD, false, DRIVE_SPEED_FASTEST);
             }
@@ -287,24 +349,12 @@ static main_state_t main_state_search(search_state_data_t *search_data, bool ent
 
     search_data->entered_new_state = (next_search_state != search_data->current_state);
     if (search_data->entered_new_state) {
-        search_timer_start();
+        timer_start(&search_data->timer);
         search_data->current_state = next_search_state;
     }
     return MAIN_STATE_SEARCH;
 }
 
-/* TODO: Create more general timer module */
-static uint32_t attack_state_start_time = 0;
-static void attack_timer_start()
-{
-    attack_state_start_time = millis();
-}
-static uint32_t attack_timer_elapsed()
-{
-    return millis() - attack_state_start_time;
-}
-
-#define ATTACK_STATE_TIMEOUT (4000)
 static main_state_t main_state_attack(attack_state_data_t *attack_data, bool entered, const detection_t *detection)
 {
     attack_state_t next_attack_state = attack_data->current_state;
@@ -334,7 +384,7 @@ static main_state_t main_state_attack(attack_state_data_t *attack_data, bool ent
         }
         next_attack_state = attack_data->current_state;
         attack_data->entered_new_state = true;
-        attack_timer_start();
+        timer_start(&attack_data->timer);
     }
 
     switch (attack_data->current_state) {
@@ -398,86 +448,16 @@ static main_state_t main_state_attack(attack_state_data_t *attack_data, bool ent
     //    (New attack state ATTACK_STATE_BREAKOUT_SHARP_LEFT_BACK) // Could get them to drive out on their own actually...
     //
     //
-    if (attack_timer_elapsed() > ATTACK_STATE_TIMEOUT) {
+    if (timer_ms_elapsed(&attack_data->timer) > ATTACK_STATE_TIMEOUT) {
         SM_ASSERT(false, "Attack timeout");
     }
 
     attack_data->entered_new_state = (next_attack_state != attack_data->current_state);
     if (attack_data->entered_new_state) {
-        attack_timer_start();
+        timer_start(&attack_data->timer);
         attack_data->current_state = next_attack_state;
     }
     return MAIN_STATE_ATTACK;
-}
-
-static const retreat_moves_t retreat_moves[] =
-{
-    [RETREAT_STATE_NONE] = { .cnt = 0 },
-    [RETREAT_STATE_DRIVE_REVERSE] =
-    {
-        .cnt = 1,
-        .moves = { [0] = { DRIVE_REVERSE, DRIVE_SPEED_FASTEST, 300 } },
-    },
-    [RETREAT_STATE_DRIVE_FORWARD] =
-    {
-        .cnt = 1,
-        .moves = { [0] = { DRIVE_FORWARD, DRIVE_SPEED_MEDIUM, 300 } },
-    },
-    [RETREAT_STATE_DRIVE_ROTATE_LEFT] =
-    {
-        .cnt = 1,
-        .moves = { [0] = { DRIVE_ROTATE_LEFT, DRIVE_SPEED_MEDIUM, 150 } },
-    },
-    [RETREAT_STATE_DRIVE_ROTATE_RIGHT] =
-    {
-        .cnt = 1,
-        .moves = { [0] = { DRIVE_ROTATE_RIGHT, DRIVE_SPEED_MEDIUM, 150 } },
-    },
-    [RETREAT_STATE_DRIVE_ARCTURN_LEFT] =
-    {
-        .cnt = 1,
-        .moves = { [0] = { DRIVE_ARCTURN_SHARP_LEFT, DRIVE_SPEED_MEDIUM, 150 } },
-    },
-    [RETREAT_STATE_DRIVE_ARCTURN_RIGHT] =
-    {
-        .cnt = 1,
-        .moves = { [0] = { DRIVE_ARCTURN_SHARP_RIGHT, DRIVE_SPEED_MEDIUM, 150 } },
-    },
-    [RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT] =
-    {
-        .cnt = 3,
-        .moves = {
-            [0] = { DRIVE_REVERSE, DRIVE_SPEED_MEDIUM, 300 },
-            [1] = { DRIVE_ARCTURN_SHARP_RIGHT, DRIVE_SPEED_MEDIUM, 250 },
-            [2] = { DRIVE_ARCTURN_MID_LEFT, DRIVE_SPEED_FAST, 300 },
-        },
-    },
-    [RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT] =
-    {
-        .cnt = 3,
-        .moves = {
-            [0] = { DRIVE_REVERSE, DRIVE_SPEED_MEDIUM, 300 },
-            [1] = { DRIVE_ARCTURN_SHARP_LEFT, DRIVE_SPEED_MEDIUM, 250 },
-            [2] = { DRIVE_ARCTURN_MID_RIGHT, DRIVE_SPEED_FAST, 300 },
-        },
-    },
-};
-
-static uint32_t retreat_move_start_time = 0;
-static void start_retreat_move(const move_t *move)
-{
-    retreat_move_start_time = millis();
-    drive_set(move->drive, false, move->speed);
-}
-
-static const move_t *get_current_retreat_move(retreat_state_data_t *data)
-{
-    return &retreat_moves[data->current_state].moves[data->move_idx];
-}
-
-static bool is_retreat_move_done(retreat_state_data_t *data)
-{
-    return (millis() - retreat_move_start_time) >= get_current_retreat_move(data)->duration;
 }
 
 static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool entered, const detection_t *detection)
@@ -493,23 +473,27 @@ static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool 
         /* Do nothing, instead check time passed below */
         break;
     case LINE_DETECTION_FRONT_LEFT:
-        if (detection->enemy.position != ENEMY_POS_NONE) {
+        if (enemy_is_to_right(&detection->enemy) || enemy_is_to_front(&detection->enemy)) {
             next_retreat_state = RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT;
+        } else if (enemy_is_to_left(&detection->enemy)) {
+            next_retreat_state = RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT;
         } else {
             next_retreat_state = RETREAT_STATE_DRIVE_REVERSE;
         }
         break;
     case LINE_DETECTION_FRONT_RIGHT:
-        if (detection->enemy.position != ENEMY_POS_NONE) {
+        if (enemy_is_to_left(&detection->enemy) && enemy_is_to_front(&detection->enemy)) {
             next_retreat_state = RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT;
+        } else if (enemy_is_to_right(&detection->enemy)) {
+            next_retreat_state = RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT;
         } else {
             next_retreat_state = RETREAT_STATE_DRIVE_REVERSE;
         }
         break;
     case LINE_DETECTION_FRONT:
-        if (detection->enemy.position == ENEMY_POS_FRONT_RIGHT || detection->enemy.position == ENEMY_POS_FRONT_AND_FRONT_RIGHT) {
+        if (enemy_is_to_left(&detection->enemy)) {
             next_retreat_state = RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT;
-        } else if (detection->enemy.position == ENEMY_POS_FRONT_LEFT || detection->enemy.position == ENEMY_POS_FRONT_AND_FRONT_LEFT) {
+        } else if (enemy_is_to_right(&detection->enemy)) {
             next_retreat_state = RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT;
         } else {
             next_retreat_state = RETREAT_STATE_DRIVE_REVERSE;
@@ -566,12 +550,12 @@ static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool 
         }
         retreat_data->current_state = next_retreat_state;
         retreat_data->move_idx = 0;
-        start_retreat_move(&retreat_moves[retreat_data->current_state].moves[retreat_data->move_idx]);
+        start_retreat_move(retreat_data, &retreat_moves[retreat_data->current_state].moves[retreat_data->move_idx]);
     } else {
         if (is_retreat_move_done(retreat_data)) {
             retreat_data->move_idx++;
             if (retreat_data->move_idx < retreat_moves[retreat_data->current_state].cnt) {
-                start_retreat_move(&retreat_moves[retreat_data->current_state].moves[retreat_data->move_idx]);
+                start_retreat_move(retreat_data, &retreat_moves[retreat_data->current_state].moves[retreat_data->move_idx]);
             } else {
                 return MAIN_STATE_SEARCH;
             }
@@ -581,7 +565,7 @@ static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool 
     return MAIN_STATE_RETREAT;
 }
 
-#ifdef MCU_TEST
+#ifdef MCU_TEST_STATE
 static void handle_test_state(test_state_t test_state)
 {
     switch (test_state) {
@@ -662,12 +646,8 @@ static main_state_t main_state_test(ir_key_t remote_command)
 
 static void init()
 {
-    /* TODO: Init time here? */
     enemy_detection_init();
     line_detection_init();
-#ifdef MCU_TEST
-    ir_remote_init();
-#endif
     drive_init();
 }
 
@@ -702,7 +682,8 @@ void state_machine_run()
 
         save_detection_to_history(&sm_data.history, &detection);
 
-#ifdef MCU_TEST
+#ifdef MCU_TEST_STATE
+        ir_remote_init();
         ir_key_t remote_command = ir_remote_get_key();
         if (remote_command != IR_KEY_NONE) {
             drive_stop();
@@ -722,7 +703,7 @@ void state_machine_run()
         case MAIN_STATE_RETREAT: /* Line detected so drive away from it */
             next_state = main_state_retreat(&sm_data.retreat_data, entered_new_state, &detection);
             break;
-#ifdef MCU_TEST
+#ifdef MCU_TEST_STATE
         case MAIN_STATE_TEST: /* Control with IR remote */
             next_state = main_state_test(remote_command);
             break;

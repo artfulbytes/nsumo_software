@@ -1,8 +1,6 @@
 #ifndef TEST_H
 #define TEST_H
 
-#define BUILD_TEST
-
 #ifdef BUILD_TEST
 #ifdef BUILD_MCU
 void test_dimming_led(void);

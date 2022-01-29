@@ -36,5 +36,6 @@ const char *enemy_range_str(enemy_range_t range);
 bool enemy_detected(const enemy_detection_t *enemy);
 bool enemy_is_to_left(const enemy_detection_t *enemy);
 bool enemy_is_to_right(const enemy_detection_t *enemy);
+bool enemy_is_to_front(const enemy_detection_t *enemy);
 
 #endif /* ENEMY_DETECTION_H */
