@@ -15,24 +15,21 @@
 #define LINE_SENSOR_VOLTAGE_THRESHOLD (0.0f)
 #endif
 
-// TODO: Make this a function instead...
-static char* line_detection_str_map[] =
-{
-    [LINE_DETECTION_NONE] = "NONE",
-    [LINE_DETECTION_FRONT] = "FRONT",
-    [LINE_DETECTION_BACK] = "BACK",
-    [LINE_DETECTION_FRONT_LEFT] = "FRONT_LEFT",
-    [LINE_DETECTION_BACK_LEFT] = "BACK_LEFT",
-    [LINE_DETECTION_FRONT_RIGHT] = "FRONT_RIGHT",
-    [LINE_DETECTION_BACK_RIGHT] = "BACK_RIGHT",
-    [LINE_DETECTION_LEFT] = "LEFT",
-    [LINE_DETECTION_RIGHT] = "RIGHT",
-    [LINE_DETECTION_DIAGONAL_LEFT] = "DIAGONALLEFT",
-    [LINE_DETECTION_DIAGONAL_RIGHT] = "DIAGONAL_RIGHT"
-};
-
 const char* line_detection_str(line_detection_t line_detection)
 {
+    static const char* line_detection_str_map[] = {
+        [LINE_DETECTION_NONE] = "NONE",
+        [LINE_DETECTION_FRONT] = "FRONT",
+        [LINE_DETECTION_BACK] = "BACK",
+        [LINE_DETECTION_FRONT_LEFT] = "FRONT_LEFT",
+        [LINE_DETECTION_BACK_LEFT] = "BACK_LEFT",
+        [LINE_DETECTION_FRONT_RIGHT] = "FRONT_RIGHT",
+        [LINE_DETECTION_BACK_RIGHT] = "BACK_RIGHT",
+        [LINE_DETECTION_LEFT] = "LEFT",
+        [LINE_DETECTION_RIGHT] = "RIGHT",
+        [LINE_DETECTION_DIAGONAL_LEFT] = "DIAGONALLEFT",
+        [LINE_DETECTION_DIAGONAL_RIGHT] = "DIAGONAL_RIGHT"
+    };
     return line_detection_str_map[line_detection];
 }
 

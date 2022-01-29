@@ -23,32 +23,30 @@
 
 const char *enemy_pos_str(enemy_pos_t pos)
 {
-    switch (pos)
-    {
-    case ENEMY_POS_NONE:                    return "NONE";
-    case ENEMY_POS_FRONT_LEFT:              return "FRONT_LEFT";
-    case ENEMY_POS_FRONT:                   return "FRONT";
-    case ENEMY_POS_FRONT_RIGHT:             return "FRONT_RIGHT";
-    case ENEMY_POS_LEFT:                    return "LEFT";
-    case ENEMY_POS_RIGHT:                   return "RIGHT";
-    case ENEMY_POS_FRONT_AND_FRONT_LEFT:    return "FRONT_AND_FRONT_LEFT";
-    case ENEMY_POS_FRONT_AND_FRONT_RIGHT:   return "FRONT_AND_FRONT_RIGHT";
-    case ENEMY_POS_FRONT_ALL:               return "FRONT_ALL";
-    case ENEMY_POS_IMPOSSIBLE:              return "IMPOSSIBLE";
-    }
-    return "";
+    static const char* enemy_pos_str_map[] = {
+        [ENEMY_POS_NONE]                    = "NONE",
+        [ENEMY_POS_FRONT_LEFT]              = "FRONT_LEFT",
+        [ENEMY_POS_FRONT]                   = "FRONT",
+        [ENEMY_POS_FRONT_RIGHT]             = "FRONT_RIGHT",
+        [ENEMY_POS_LEFT]                    = "LEFT",
+        [ENEMY_POS_RIGHT]                   = "RIGHT",
+        [ENEMY_POS_FRONT_AND_FRONT_LEFT]    = "FRONT_AND_FRONT_LEFT",
+        [ENEMY_POS_FRONT_AND_FRONT_RIGHT]   = "FRONT_AND_FRONT_RIGHT",
+        [ENEMY_POS_FRONT_ALL]               = "FRONT_ALL",
+        [ENEMY_POS_IMPOSSIBLE]              = "IMPOSSIBLE",
+    };
+    return enemy_pos_str_map[pos];
 }
 
 const char *enemy_range_str(enemy_range_t range)
 {
-    switch (range)
-    {
-    case ENEMY_RANGE_NONE: return  "NONE";
-    case ENEMY_RANGE_CLOSE: return "CLOSE";
-    case ENEMY_RANGE_MID: return   "MID";
-    case ENEMY_RANGE_FAR: return   "FAR";
-    }
-    return "";
+    static const char* enemy_range_str_map[] = {
+        [ENEMY_RANGE_NONE] = "NONE",
+        [ENEMY_RANGE_CLOSE] = "CLOSE",
+        [ENEMY_RANGE_MID] = "MID",
+        [ENEMY_RANGE_FAR] = "FAR",
+    };
+    return enemy_range_str_map[range];
 }
 
 enemy_detection_t enemy_detection_get()

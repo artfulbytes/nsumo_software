@@ -36,7 +36,7 @@ typedef enum state {
     MAIN_STATE_SEARCH,
     MAIN_STATE_ATTACK,
     MAIN_STATE_RETREAT,
-#if MCU_TEST_STATE
+#ifdef MCU_TEST_STATE
     MAIN_STATE_TEST
 #endif
 } main_state_t;
@@ -64,7 +64,7 @@ typedef enum {
     RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT,
 } retreat_state_t;
 
-#if MCU_TEST_STATE
+#ifdef MCU_TEST_STATE
 typedef enum {
     TEST_STATE_NONE,
     TEST_STATE_DRIVE_REVERSE,
@@ -190,47 +190,44 @@ static void save_detection_to_history(history_t *history, const detection_t *det
 
 static const char *main_state_str(main_state_t main_state)
 {
-    switch (main_state)
-    {
-    case MAIN_STATE_SEARCH: return "ST_SEARCH";
-    case MAIN_STATE_ATTACK: return "ST_ATTACK";
-    case MAIN_STATE_RETREAT: return "ST_RETREAT";
+    static const char* main_state_map[] = {
+        [MAIN_STATE_SEARCH] = "ST_SEARCH",
+        [MAIN_STATE_ATTACK] = "ST_ATTACK",
+        [MAIN_STATE_RETREAT] = "ST_RETREAT",
 #ifdef MCU_TEST_STATE
-    case MAIN_STATE_TEST: return "ST_TEST";
+        [MAIN_STATE_TEST] = "ST_TEST",
 #endif
-    }
-    return "";
+    };
+    return main_state_map[main_state];
 }
 
 static const char *retreat_state_str(retreat_state_t retreat_state)
 {
-    switch (retreat_state)
-    {
-    case RETREAT_STATE_NONE: return "RET_NONE";
-    case RETREAT_STATE_DRIVE_REVERSE: return "RET_REVERSE";
-    case RETREAT_STATE_DRIVE_FORWARD: return "RET_FORWARD";
-    case RETREAT_STATE_DRIVE_ROTATE_LEFT: return "RETE_ROTATE_LEFT";
-    case RETREAT_STATE_DRIVE_ROTATE_RIGHT: return "RET_ROTATE_RIGHT";
-    case RETREAT_STATE_DRIVE_ARCTURN_LEFT: return "RET_ARCTURN_LEFT";
-    case RETREAT_STATE_DRIVE_ARCTURN_RIGHT: return "RET_ARCTURN_RIGHT";
-    case RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT: return "RET_ALIGN_ENEMY_LEFT";
-    case RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT: return "RET_ALIGN_ENEMY_RIGHT";
-    }
-    return "";
+    static const char* retreat_state_map[] = {
+        [RETREAT_STATE_NONE] = "RET_NONE",
+        [RETREAT_STATE_DRIVE_REVERSE] = "RET_REVERSE",
+        [RETREAT_STATE_DRIVE_FORWARD] = "RET_FORWARD",
+        [RETREAT_STATE_DRIVE_ROTATE_LEFT] = "RETE_ROTATE_LEFT",
+        [RETREAT_STATE_DRIVE_ROTATE_RIGHT] = "RET_ROTATE_RIGHT",
+        [RETREAT_STATE_DRIVE_ARCTURN_LEFT] = "RET_ARCTURN_LEFT",
+        [RETREAT_STATE_DRIVE_ARCTURN_RIGHT] = "RET_ARCTURN_RIGHT",
+        [RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT] = "RET_ALIGN_ENEMY_LEFT",
+        [RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT] = "RET_ALIGN_ENEMY_RIGHT",
+    };
+    return retreat_state_map[retreat_state];
 }
 
 #ifdef MCU_TEST_STATE
 static const char *test_state_str(test_state_t test_state)
 {
-    switch (test_state)
-    {
-    case TEST_STATE_NONE: return "TEST_STATE_NONE";
-    case TEST_STATE_DRIVE_REVERSE: return "TEST_STATE_DRIVE_REVERSE";
-    case TEST_STATE_DRIVE_FORWARD: return "TEST_STATE_DRIVE_FORWARD";
-    case TEST_STATE_DRIVE_ROTATE_LEFT: return "TEST_STATE_DRIVE_ROTATE_LEFT";
-    case TEST_STATE_DRIVE_ROTATE_RIGHT: return "TEST_STATE_DRIVE_ROTATE_RIGHT";
-    }
-    return "";
+    static const char* test_state_map[] = {
+        [TEST_STATE_NONE] = "TEST_STATE_NONE",
+        [TEST_STATE_DRIVE_REVERSE] = "TEST_STATE_DRIVE_REVERSE",
+        [TEST_STATE_DRIVE_FORWARD] = "TEST_STATE_DRIVE_FORWARD",
+        [TEST_STATE_DRIVE_ROTATE_LEFT] = "TEST_STATE_DRIVE_ROTATE_LEFT",
+        [TEST_STATE_DRIVE_ROTATE_RIGHT] = "TEST_STATE_DRIVE_ROTATE_RIGHT",
+    };
+    return test_state_map[test_state];
 }
 #endif
 
