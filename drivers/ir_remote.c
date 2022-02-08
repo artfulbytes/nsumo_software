@@ -174,7 +174,6 @@ static void ir_remote_isr() {
         }
         break;
     case STATE_RECEIVING_BITS:
-        /* TODO Create function to check in between... */
         if (time_equal(time_passed_usec, T_LOGICAL_ZERO_USEC, T_ERROR_MARGIN_USEC)) {
             /* We got a 0 */
             bit_counter++;

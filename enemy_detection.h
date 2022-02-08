@@ -34,8 +34,8 @@ void enemy_detection_init(void);
 const char *enemy_pos_str(enemy_pos_t pos);
 const char *enemy_range_str(enemy_range_t range);
 bool enemy_detected(const enemy_detection_t *enemy);
-bool enemy_is_to_left(const enemy_detection_t *enemy);
-bool enemy_is_to_right(const enemy_detection_t *enemy);
-bool enemy_is_to_front(const enemy_detection_t *enemy);
+bool enemy_at_left(const enemy_detection_t *enemy);
+bool enemy_at_right(const enemy_detection_t *enemy);
+bool enemy_at_front(const enemy_detection_t *enemy);
 
 #endif /* ENEMY_DETECTION_H */

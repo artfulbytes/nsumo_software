@@ -38,22 +38,22 @@ static const duty_cycles_t drive_to_duty_cycle[][4] =
         {
             [DRIVE_SPEED_SLOW] = {-10, 25},
             [DRIVE_SPEED_MEDIUM] = {-10, 50},
-            [DRIVE_SPEED_FAST] = {-15, 60},
+            [DRIVE_SPEED_FAST] = {-25, 75},
             [DRIVE_SPEED_FASTEST] = {-20, 100},
         },
     [DRIVE_ARCTURN_MID_LEFT] =
         {
-            [DRIVE_SPEED_SLOW] = {15, 25},
-            [DRIVE_SPEED_MEDIUM] = {30, 50},
-            [DRIVE_SPEED_FAST] = {35, 60},
+            [DRIVE_SPEED_SLOW] = {15, 30},
+            [DRIVE_SPEED_MEDIUM] = {25, 50},
+            [DRIVE_SPEED_FAST] = {35, 70},
             [DRIVE_SPEED_FASTEST] = {50, 100},
         },
     [DRIVE_ARCTURN_WIDE_LEFT] =
         {
             [DRIVE_SPEED_SLOW] = {20, 25},
-            [DRIVE_SPEED_MEDIUM] = {39, 50},
-            [DRIVE_SPEED_FAST] = {47, 60},
-            [DRIVE_SPEED_FASTEST] = {78, 100},
+            [DRIVE_SPEED_MEDIUM] = {40, 50},
+            [DRIVE_SPEED_FAST] = {60, 70},
+            [DRIVE_SPEED_FASTEST] = {85, 100},
         },
 #else
     [DRIVE_FORWARD] =

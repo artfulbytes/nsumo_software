@@ -34,7 +34,6 @@ SOURCES = main.c \
           drivers/pwm.c \
           drivers/motor.c \
           drivers/adc.c \
-          drivers/sleep.c \
           drivers/ir_remote.c \
           drivers/uart.c \
           drivers/led.c \

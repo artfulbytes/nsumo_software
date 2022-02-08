@@ -63,11 +63,6 @@ static volatile uint8_t* port_edge_select_registers[] =
     /* Port 3 is not interrupt capable on MSP430G2553 */
 };
 
-// TODO: What about resistors??? and select (gpio, 1, 2, 3 makes sense?)?
-// What about pullup/pulldown for input (say for the line detector)
-// TODO: SHould default config already set the correct one? Becomes a bit double then...
-// WHat if we do SEL that is not GPIO, is all other settings discarded then?
-// TODO: Rearrange these
 static const gpio_config_t gpio_initial_config[] =
 {
     {GPIO_IR_REMOTE, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
@@ -93,7 +88,6 @@ static const gpio_config_t gpio_initial_config[] =
     {GPIO_LINE_DETECT_FRONT_LEFT, GPIO_INPUT, GPIO_HIGH, RESISTOR_ENABLED, GPIO_SEL_GPIO},
     {GPIO_XSHUT_LEFT, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
     {GPIO_LINE_DETECT_BACK_RIGHT, GPIO_INPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
-// TODO: Fix the default of these
     {GPIO_PWM_MOTORS_LEFT, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},
     {GPIO_PWM_MOTORS_RIGHT, GPIO_OUTPUT, GPIO_HIGH, RESISTOR_DISABLED, GPIO_SEL_GPIO},
     {GPIO_MOTORS_RIGHT_CC_1, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED, GPIO_SEL_GPIO},

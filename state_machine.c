@@ -50,6 +50,7 @@ typedef enum {
     ATTACK_STATE_FORWARD,
     ATTACK_STATE_LEFT,
     ATTACK_STATE_RIGHT,
+    ATTACK_STATE_NONE,
 } attack_state_t;
 
 typedef enum {
@@ -84,7 +85,6 @@ typedef struct
 typedef struct
 {
     attack_state_t current_state;
-    bool entered_new_state;
     timer_t timer;
 } attack_state_data_t;
 
@@ -148,8 +148,8 @@ static const enemy_detection_t *last_enemy_seen_left_or_right(const history_t *h
                                   (history->idx - i) :
                                   (HISTORY_SIZE + history->idx - i);
         if (valid_history_entry(&history->detections[hist_idx])) {
-            if (enemy_is_to_left(&history->detections[hist_idx].enemy) ||
-                enemy_is_to_right(&history->detections[hist_idx].enemy)) {
+            if (enemy_at_left(&history->detections[hist_idx].enemy) ||
+                enemy_at_right(&history->detections[hist_idx].enemy)) {
                 return &(history->detections[hist_idx].enemy);
             }
         } else {
@@ -242,44 +242,44 @@ static const retreat_moves_t retreat_moves[] =
     [RETREAT_STATE_DRIVE_FORWARD] =
     {
         .cnt = 1,
-        .moves = { [0] = { DRIVE_FORWARD, DRIVE_SPEED_MEDIUM, 300 } },
+        .moves = { [0] = { DRIVE_FORWARD, DRIVE_SPEED_FAST, 300 } },
     },
     [RETREAT_STATE_DRIVE_ROTATE_LEFT] =
     {
         .cnt = 1,
-        .moves = { [0] = { DRIVE_ROTATE_LEFT, DRIVE_SPEED_MEDIUM, 150 } },
+        .moves = { [0] = { DRIVE_ROTATE_LEFT, DRIVE_SPEED_FAST, 150 } },
     },
     [RETREAT_STATE_DRIVE_ROTATE_RIGHT] =
     {
         .cnt = 1,
-        .moves = { [0] = { DRIVE_ROTATE_RIGHT, DRIVE_SPEED_MEDIUM, 150 } },
+        .moves = { [0] = { DRIVE_ROTATE_RIGHT, DRIVE_SPEED_FAST, 150 } },
     },
     [RETREAT_STATE_DRIVE_ARCTURN_LEFT] =
     {
         .cnt = 1,
-        .moves = { [0] = { DRIVE_ARCTURN_SHARP_LEFT, DRIVE_SPEED_MEDIUM, 150 } },
+        .moves = { [0] = { DRIVE_ARCTURN_SHARP_LEFT, DRIVE_SPEED_FASTEST, 150 } },
     },
     [RETREAT_STATE_DRIVE_ARCTURN_RIGHT] =
     {
         .cnt = 1,
-        .moves = { [0] = { DRIVE_ARCTURN_SHARP_RIGHT, DRIVE_SPEED_MEDIUM, 150 } },
+        .moves = { [0] = { DRIVE_ARCTURN_SHARP_RIGHT, DRIVE_SPEED_FASTEST, 150 } },
     },
     [RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT] =
     {
         .cnt = 3,
         .moves = {
-            [0] = { DRIVE_REVERSE, DRIVE_SPEED_MEDIUM, 300 },
-            [1] = { DRIVE_ARCTURN_SHARP_RIGHT, DRIVE_SPEED_MEDIUM, 250 },
-            [2] = { DRIVE_ARCTURN_MID_LEFT, DRIVE_SPEED_FAST, 300 },
+            [0] = { DRIVE_REVERSE, DRIVE_SPEED_FASTEST, 300 },
+            [1] = { DRIVE_ARCTURN_SHARP_RIGHT, DRIVE_SPEED_FASTEST, 250 },
+            [2] = { DRIVE_ARCTURN_MID_LEFT, DRIVE_SPEED_FASTEST, 300 },
         },
     },
     [RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT] =
     {
         .cnt = 3,
         .moves = {
-            [0] = { DRIVE_REVERSE, DRIVE_SPEED_MEDIUM, 300 },
-            [1] = { DRIVE_ARCTURN_SHARP_LEFT, DRIVE_SPEED_MEDIUM, 250 },
-            [2] = { DRIVE_ARCTURN_MID_RIGHT, DRIVE_SPEED_FAST, 300 },
+            [0] = { DRIVE_REVERSE, DRIVE_SPEED_FASTEST, 300 },
+            [1] = { DRIVE_ARCTURN_SHARP_LEFT, DRIVE_SPEED_FASTEST, 250 },
+            [2] = { DRIVE_ARCTURN_MID_RIGHT, DRIVE_SPEED_FASTEST, 300 },
         },
     },
 };
@@ -321,8 +321,7 @@ static main_state_t main_state_search(search_state_data_t *search_data, bool ent
         if (timer_ms_elapsed(&search_data->timer) < SEARCH_STATE_ROTATE_TIMEOUT) {
             if (search_data->entered_new_state) {
                 const enemy_detection_t *last_enemy = last_enemy_seen_left_or_right(hist);
-                // TODO: Account for pure left and right too?
-                if (last_enemy && enemy_is_to_right(last_enemy)) {
+                if (last_enemy && enemy_at_right(last_enemy)) {
                     drive_set(DRIVE_ROTATE_RIGHT, false, DRIVE_SPEED_FAST);
                 } else {
                     drive_set(DRIVE_ROTATE_LEFT, false, DRIVE_SPEED_FAST);
@@ -331,7 +330,6 @@ static main_state_t main_state_search(search_state_data_t *search_data, bool ent
         } else {
             next_search_state = SEARCH_STATE_FORWARD;
         }
-        // TODO: Arc turn if detected on left or right (let distance determine sharpness)
         break;
     case SEARCH_STATE_FORWARD:
         if (timer_ms_elapsed(&search_data->timer) < SEARCH_STATE_FORWARD_TIMEOUT) {
@@ -352,108 +350,65 @@ static main_state_t main_state_search(search_state_data_t *search_data, bool ent
     return MAIN_STATE_SEARCH;
 }
 
+static attack_state_t enemy_detect_to_attack_state(const enemy_detection_t *enemy)
+{
+    if (enemy_at_front(enemy)) {
+        return ATTACK_STATE_FORWARD;
+    } else if (enemy_at_left(enemy)) {
+        return ATTACK_STATE_LEFT;
+    } else if (enemy_at_right(enemy)) {
+        return ATTACK_STATE_RIGHT;
+    } else {
+        return ATTACK_STATE_NONE;
+    }
+}
+
 static main_state_t main_state_attack(attack_state_data_t *attack_data, bool entered, const detection_t *detection)
 {
-    attack_state_t next_attack_state = attack_data->current_state;
-
     if (detection->line != LINE_DETECTION_NONE) {
         return MAIN_STATE_RETREAT;
     }
-    const enemy_detection_t enemy = detection->enemy;
-    if (!enemy_detected(&enemy)) {
+    const attack_state_t next_attack_state = enemy_detect_to_attack_state(&detection->enemy);
+    if (next_attack_state == ATTACK_STATE_NONE) {
         return MAIN_STATE_SEARCH;
     }
 
-    // TODO: Not handling enemy pos left and right even though enemy_detected returns true for those
-    if (entered) {
-        if (enemy.position == ENEMY_POS_FRONT || enemy.position == ENEMY_POS_FRONT_ALL) {
-            attack_data->current_state = ATTACK_STATE_FORWARD;
-            // TODO is to left?
-        } else if (enemy.position == ENEMY_POS_FRONT_LEFT || enemy.position == ENEMY_POS_FRONT_AND_FRONT_LEFT) {
-            attack_data->current_state = ATTACK_STATE_LEFT;
-            // TODO is to right?
-        } else if (enemy.position == ENEMY_POS_FRONT_RIGHT || enemy.position == ENEMY_POS_FRONT_AND_FRONT_RIGHT) {
-            attack_data->current_state = ATTACK_STATE_RIGHT;
-        } else {
-            // TODO: Undo this
-            return MAIN_STATE_SEARCH;
-            SM_ASSERT(false, "Unexpected enemy");
-        }
-        next_attack_state = attack_data->current_state;
-        attack_data->entered_new_state = true;
+    if (entered || attack_data->current_state != next_attack_state) {
+        attack_data->current_state = next_attack_state;
         timer_start(&attack_data->timer);
+    } else if (timer_ms_elapsed(&attack_data->timer) > ATTACK_STATE_TIMEOUT) {
+        // Stuck in same attack state for long. We might be stuck in a head-to-head
+        // battle.
+        //     Best way to break out of it? Increase power for a while...
+        //     Timeout again? Sharp arc turn reverse
+        // TODO: Try to break out of it:
+        //    (New attack state ATTACK_STATE_BREAKOUT_FAST_FORWARD) // Could get us to drive out on our own if unlucky...
+        //    (New attack state ATTACK_STATE_BREAKOUT_SHARP_LEFT_BACK) // Could get them to drive out on their own actually...
+        //
+        //
+        SM_ASSERT(false, "Attack timeout");
+    } else {
+        return MAIN_STATE_ATTACK;
     }
 
-    switch (attack_data->current_state) {
+    switch (attack_data->current_state)
+    {
     case ATTACK_STATE_FORWARD:
-        if (enemy.position != ENEMY_POS_FRONT && enemy.position != ENEMY_POS_FRONT_ALL) {
-            if (enemy.position == ENEMY_POS_FRONT_LEFT || enemy.position == ENEMY_POS_FRONT_AND_FRONT_LEFT) {
-                next_attack_state = ATTACK_STATE_LEFT;
-            } else if (enemy.position == ENEMY_POS_FRONT_RIGHT || enemy.position == ENEMY_POS_FRONT_AND_FRONT_RIGHT) {
-                next_attack_state = ATTACK_STATE_RIGHT;
-            } else {
-                SM_ASSERT(false, enemy_pos_str(enemy.position));
-            }
-            break;
-        }
-        if (attack_data->entered_new_state) {
-            drive_set(DRIVE_FORWARD, false, DRIVE_SPEED_FASTEST);
-        }
-        break;
-    case ATTACK_STATE_LEFT:
-        if (enemy.position != ENEMY_POS_FRONT_LEFT && enemy.position != ENEMY_POS_FRONT_AND_FRONT_LEFT) {
-            if (enemy.position == ENEMY_POS_FRONT || enemy.position == ENEMY_POS_FRONT_ALL) {
-                next_attack_state = ATTACK_STATE_FORWARD;
-            } else if (enemy.position == ENEMY_POS_FRONT_RIGHT || enemy.position == ENEMY_POS_FRONT_AND_FRONT_RIGHT) {
-                // Unlikely but possible
-                next_attack_state = ATTACK_STATE_RIGHT;
-            } else {
-                SM_ASSERT(false, enemy_pos_str(enemy.position));
-            }
-            break;
-        }
-        if (attack_data->entered_new_state) {
-            // TODO: Use range to decide drive speed
-            drive_set(DRIVE_ARCTURN_WIDE_LEFT, false, DRIVE_SPEED_FASTEST);
-        }
+        drive_set(DRIVE_FORWARD, false, DRIVE_SPEED_FASTEST);
         break;
     case ATTACK_STATE_RIGHT:
-        if (enemy.position != ENEMY_POS_FRONT_RIGHT && enemy.position != ENEMY_POS_FRONT_AND_FRONT_RIGHT) {
-            if (enemy.position == ENEMY_POS_FRONT || enemy.position == ENEMY_POS_FRONT_ALL) {
-                next_attack_state = ATTACK_STATE_FORWARD;
-            } else if (enemy.position == ENEMY_POS_FRONT_LEFT || enemy.position == ENEMY_POS_FRONT_AND_FRONT_LEFT) {
-                // Unlikely but possible
-                next_attack_state = ATTACK_STATE_LEFT;
-            } else {
-                SM_ASSERT(false, enemy_pos_str(enemy.position));
-            }
-            break;
-        }
-        if (attack_data->entered_new_state) {
-            // TODO: Use range to decide drive speed
-            drive_set(DRIVE_ARCTURN_WIDE_RIGHT, false, DRIVE_SPEED_FASTEST);
-        }
+        // TODO: Use range to decide drive speed
+        drive_set(DRIVE_ARCTURN_WIDE_RIGHT, false, DRIVE_SPEED_FASTEST);
         break;
+    case ATTACK_STATE_LEFT:
+        // TODO: Use range to decide drive speed
+        drive_set(DRIVE_ARCTURN_WIDE_LEFT, false, DRIVE_SPEED_FASTEST);
+        break;
+    case ATTACK_STATE_NONE:
+        SM_ASSERT(false, "Unexpected state");
+        return MAIN_STATE_SEARCH;
     }
 
-    // Stuck in same attack state for long. We might be stuck in a head-to-head
-    // battle.
-    //     Best way to break out of it? Increase power for a while...
-    //     Timeout again? Sharp arc turn reverse
-    // TODO: Try to break out of it:
-    //    (New attack state ATTACK_STATE_BREAKOUT_FAST_FORWARD) // Could get us to drive out on our own if unlucky...
-    //    (New attack state ATTACK_STATE_BREAKOUT_SHARP_LEFT_BACK) // Could get them to drive out on their own actually...
-    //
-    //
-    if (timer_ms_elapsed(&attack_data->timer) > ATTACK_STATE_TIMEOUT) {
-        SM_ASSERT(false, "Attack timeout");
-    }
-
-    attack_data->entered_new_state = (next_attack_state != attack_data->current_state);
-    if (attack_data->entered_new_state) {
-        timer_start(&attack_data->timer);
-        attack_data->current_state = next_attack_state;
-    }
     return MAIN_STATE_ATTACK;
 }
 
@@ -470,27 +425,27 @@ static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool 
         /* Do nothing, instead check time passed below */
         break;
     case LINE_DETECTION_FRONT_LEFT:
-        if (enemy_is_to_right(&detection->enemy) || enemy_is_to_front(&detection->enemy)) {
+        if (enemy_at_right(&detection->enemy) || enemy_at_front(&detection->enemy)) {
             next_retreat_state = RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT;
-        } else if (enemy_is_to_left(&detection->enemy)) {
+        } else if (enemy_at_left(&detection->enemy)) {
             next_retreat_state = RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT;
         } else {
             next_retreat_state = RETREAT_STATE_DRIVE_REVERSE;
         }
         break;
     case LINE_DETECTION_FRONT_RIGHT:
-        if (enemy_is_to_left(&detection->enemy) && enemy_is_to_front(&detection->enemy)) {
+        if (enemy_at_left(&detection->enemy) || enemy_at_front(&detection->enemy)) {
             next_retreat_state = RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT;
-        } else if (enemy_is_to_right(&detection->enemy)) {
+        } else if (enemy_at_right(&detection->enemy)) {
             next_retreat_state = RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT;
         } else {
             next_retreat_state = RETREAT_STATE_DRIVE_REVERSE;
         }
         break;
     case LINE_DETECTION_FRONT:
-        if (enemy_is_to_left(&detection->enemy)) {
+        if (enemy_at_left(&detection->enemy)) {
             next_retreat_state = RETREAT_STATE_DRIVE_ALIGN_ENEMY_LEFT;
-        } else if (enemy_is_to_right(&detection->enemy)) {
+        } else if (enemy_at_right(&detection->enemy)) {
             next_retreat_state = RETREAT_STATE_DRIVE_ALIGN_ENEMY_RIGHT;
         } else {
             next_retreat_state = RETREAT_STATE_DRIVE_REVERSE;
@@ -543,7 +498,7 @@ static main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool 
         || detection->line != LINE_DETECTION_NONE /* Keep resetting the time until we no longer detect line */
     ) {
         if (retreat_data->current_state != next_retreat_state) {
-            TRACE_NOPREFIX("New retreat state %s %s", retreat_state_str(retreat_data->current_state), line_detection_str(detection->line));
+            TRACE_NOPREFIX("New retreat state %s %s", retreat_state_str(next_retreat_state), line_detection_str(detection->line));
         }
         retreat_data->current_state = next_retreat_state;
         retreat_data->move_idx = 0;
@@ -717,8 +672,16 @@ void state_machine_run()
 
 #ifndef BUILD_MCU
         /* Sleep a bit to offload the host CPU */
-        // TODO: Rename to millis?
         sleep_ms(1);
+#else
+#ifndef MCU_TEST_STATE
+    if (ir_remote_get_key() != IR_KEY_NONE) {
+        drive_stop();
+        current_state = next_state = MAIN_STATE_SEARCH;
+        entered_new_state = true;
+        ir_remote_wait_for_start_signal();
+    }
+#endif
 #endif
     }
 }

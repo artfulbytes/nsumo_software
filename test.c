@@ -9,7 +9,6 @@
 #include "adc.h"
 #include "pwm.h"
 #include "gpio.h"
-#include "range_sensor.h"
 #include "ir_remote.h"
 #include "state_machine_ir.h"
 #include "millis.h"
