@@ -1,11 +1,5 @@
-#if BUILD_MCU
 #include "drive.h"
 #include "motor.h"
-#else
-#include "NsumoController/nsumo/drive.h"
-#include "NsumoController/nsumo/drivers/motor.h"
-#endif
-#include "trace.h"
 
 #define DUTY_CYCLE_STOP (0)
 
@@ -55,7 +49,7 @@ static const duty_cycles_t drive_to_duty_cycle[][4] =
             [DRIVE_SPEED_FAST] = {60, 70},
             [DRIVE_SPEED_FASTEST] = {85, 100},
         },
-#else
+#else // Simulator (TODO: Tune simulator so the above values match instead)
     [DRIVE_FORWARD] =
         {
             [DRIVE_SPEED_SLOW] = {25, 25},

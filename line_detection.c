@@ -1,19 +1,14 @@
+#include "line_detection.h"
 #if BUILD_MCU
-#include "line_detection.h"
 #include "drivers/qre1113.h"
-#else
-#include "line_detection.h"
+#define LINE_SENSOR_VOLTAGE_THRESHOLD (700)
+#else // Simulator
 #include "NsumoController/voltage_lines.h"
 #include "microcontroller_c_bindings.h"
+#define LINE_SENSOR_VOLTAGE_THRESHOLD (0.0f)
 #endif
 
 #include <stdbool.h>
-
-#if BUILD_MCU
-#define LINE_SENSOR_VOLTAGE_THRESHOLD (700)
-#else
-#define LINE_SENSOR_VOLTAGE_THRESHOLD (0.0f)
-#endif
 
 const char* line_detection_str(line_detection_t line_detection)
 {
@@ -42,7 +37,7 @@ line_detection_t line_detection_get()
     const bool frontRight = voltages.front_right < LINE_SENSOR_VOLTAGE_THRESHOLD;
     const bool backLeft = voltages.back_left < LINE_SENSOR_VOLTAGE_THRESHOLD;
     const bool backRight = voltages.back_right < LINE_SENSOR_VOLTAGE_THRESHOLD;
-#else
+#else // Simulator
     const bool frontLeft = get_voltage(VOLTAGE_FRONT_LEFT_LINE_DETECTOR) > LINE_SENSOR_VOLTAGE_THRESHOLD;
     const bool frontRight = get_voltage(VOLTAGE_FRONT_RIGHT_LINE_DETECTOR) > LINE_SENSOR_VOLTAGE_THRESHOLD;
     const bool backLeft = get_voltage(VOLTAGE_BACK_LEFT_LINE_DETECTOR) > LINE_SENSOR_VOLTAGE_THRESHOLD;

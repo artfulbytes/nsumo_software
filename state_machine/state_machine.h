@@ -3,4 +3,4 @@
 
 void state_machine_run(void);
 
-#endif /* STATE_MACHINE_H */
+#endif // STATE_MACHINE_H

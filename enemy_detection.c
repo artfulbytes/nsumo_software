@@ -1,9 +1,8 @@
+#include "enemy_detection.h"
 
 #ifdef BUILD_MCU
-#include "enemy_detection.h"
 #include "drivers/vl53l0x.h"
-#else /* Simulator */
-#include "NsumoController/nsumo/enemy_detection.h"
+#else // Simulator
 #include "microcontroller_c_bindings.h"
 #include "NsumoController/voltage_lines.h"
 #endif
@@ -65,7 +64,7 @@ enemy_detection_t enemy_detection_get()
     const uint16_t range_front = ranges[VL53L0X_IDX_FRONT];
     const uint16_t range_front_right = ranges[VL53L0X_IDX_FRONT_RIGHT];
     //const uint16_t range_right = ranges[VL53L0X_IDX_RIGHT];
-#else /* Simulator */
+#else // Simulator
     //const uint16_t range_left = get_voltage(VOLTAGE_LEFT_RANGE_SENSOR) * VOLTAGE_TO_RANGE;
     const uint16_t range_front_left = get_voltage(VOLTAGE_FRONT_LEFT_RANGE_SENSOR) * VOLTAGE_TO_RANGE;
     const uint16_t range_front = get_voltage(VOLTAGE_FRONT_RANGE_SENSOR) * VOLTAGE_TO_RANGE;
