@@ -118,7 +118,7 @@ static bool read_reg_bytes(addr_size_t addr_size, uint16_t addr, uint8_t *bytes,
     while (UCB0CTL1 & UCTXSTT); /* Wait for start condition to be sent */
     success = !(UCB0STAT & UCNACKIFG);
     if (success) {
-        for (int i = 0; i < byte_count; i++) {
+        for (uint16_t i = 0; i < byte_count; i++) {
             if (i + 1 == byte_count) {
                 stop_transfer();
                 transfer_stopped = true;

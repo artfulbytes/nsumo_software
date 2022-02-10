@@ -12,11 +12,12 @@ RM = rm
 ###########################################################
 # Directories
 ###########################################################
-MSPGCC_ROOT_DIR = /home/artfulbytes/ti/ccs910/ccs/tools/compiler/msp430-gcc-8.2.0.52_linux64
+TI_CCS_DIR = /home/artfulbytes/ti/ccs910/ccs
+MSPGCC_ROOT_DIR = $(TI_CCS_DIR)/tools/compiler/msp430-gcc-8.2.0.52_linux64
 MSPGCC_BIN_DIR = $(MSPGCC_ROOT_DIR)/bin
-MSP_DEBUG_BIN_DIR = /home/artfulbytes/ti/ccs910/ccs/ccs_base/DebugServer/bin
-MSP_DEBUG_DRIVERS_DIR = /home/artfulbytes/ti/ccs910/ccs/ccs_base/DebugServer/drivers
-INCLUDE_GCC_DIR = /home/artfulbytes/ti/ccs910/ccs/ccs_base/msp430/include_gcc
+MSP_DEBUG_BIN_DIR = $(TI_CCS_DIR)/ccs_base/DebugServer/bin
+MSP_DEBUG_DRIVERS_DIR = $(TI_CCS_DIR)/ccs_base/DebugServer/drivers
+INCLUDE_GCC_DIR = $(TI_CCS_DIR)/ccs_base/msp430/include_gcc
 INCLUDE_DIRS = $(INCLUDE_GCC_DIR) ./drivers ./state_machine ./external/printf ./
 LIB_DIRS = $(INCLUDE_GCC_DIR)
 ROOT = .
@@ -60,12 +61,15 @@ OBJECT_NAMES = $(SOURCES:.c=.o)
 OBJECTS = $(patsubst %,$(OBJ_DIR)/%,$(OBJECT_NAMES))
 # Allow passing macro defines as parameter to make (e.g. "make DEFINES="BUILD_TEST")
 LOCAL_DEFINES = $(addprefix -D,$(DEFINES))
+# Select a test to build (e.g. "make TEST="test_dimming_led")
+TEST_DEFINE = $(addprefix -DTEST=,$(TEST))
 
 ###########################################################
 # Flags
 ###########################################################
 MCU = msp430g2553
-CFLAGS += -mmcu=$(MCU) $(addprefix -I,$(INCLUDE_DIRS)) -DBUILD_MCU $(LOCAL_DEFINES) -DPRINTF_INCLUDE_CONFIG_H -Og -mmcu=msp430g2553 -Wall
+WFLAGS = -Wall -Wextra -Werror -Wshadow
+CFLAGS += -mmcu=$(MCU) $(addprefix -I,$(INCLUDE_DIRS)) -DBUILD_MCU $(LOCAL_DEFINES) $(TEST_DEFINE) -DPRINTF_INCLUDE_CONFIG_H -Og -mmcu=msp430g2553 $(WFLAGS)
 LDFLAGS = -mmcu=$(MCU) $(addprefix -L,$(LIB_DIRS)) -Wl,--gc-sections
 
 ###########################################################

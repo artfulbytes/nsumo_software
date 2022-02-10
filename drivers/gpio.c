@@ -110,8 +110,7 @@ void gpio_init()
     *port_interrupt_enable_registers[GPIO_PORT_1] &= 0;
     *port_interrupt_enable_registers[GPIO_PORT_2] &= 0;
 
-    int cfg_idx;
-    for (cfg_idx = 0; cfg_idx < ARRAY_SIZE(gpio_initial_config); cfg_idx++) {
+    for (uint16_t cfg_idx = 0; cfg_idx < ARRAY_SIZE(gpio_initial_config); cfg_idx++) {
         gpio_configure(&gpio_initial_config[cfg_idx]);
     }
 }

@@ -1,7 +1,6 @@
 #ifndef TEST_H
 #define TEST_H
 
-#ifdef BUILD_TEST
 #ifdef BUILD_MCU
 void test_dimming_led(void);
 void test_leds(void);
@@ -24,5 +23,4 @@ void test_drive_and_line_detect(void);
 void test_rotate_and_enemy_detect(void);
 void test_enemy_detection_print(void);
 void test_drive_duty_cycles(void);
-#endif
-#endif /* TEST_H */
+#endif // TEST_H

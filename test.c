@@ -3,9 +3,9 @@
 #include "enemy_detection.h"
 #include "drive.h"
 #include "trace.h"
+#include "motor.h"
 
 #ifdef BUILD_MCU
-#include "motor.h"
 #include "adc.h"
 #include "pwm.h"
 #include "gpio.h"
@@ -15,11 +15,10 @@
 #include "vl53l0x.h"
 #include "led.h"
 #include "qre1113.h"
-#else
+#else // Simulator
 #include "microcontroller_c_bindings.h"
 #endif
 
-#ifdef BUILD_TEST
 #ifdef BUILD_MCU
 void test_dimming_led()
 {
@@ -355,4 +354,3 @@ void test_drive_duty_cycles()
         millis();
     }
 }
-#endif // BUILD_TEST
