@@ -3,7 +3,8 @@
 
 #include <stdbool.h>
 
-typedef enum enemy_pos {
+typedef enum enemy_pos
+{
     ENEMY_POS_NONE,
     ENEMY_POS_FRONT_LEFT,
     ENEMY_POS_FRONT,
@@ -16,7 +17,8 @@ typedef enum enemy_pos {
     ENEMY_POS_IMPOSSIBLE // Keep this for debugging
 } enemy_pos_t;
 
-typedef enum enemy_range {
+typedef enum enemy_range
+{
     ENEMY_RANGE_NONE,
     ENEMY_RANGE_CLOSE,
     ENEMY_RANGE_MID,

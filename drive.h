@@ -3,14 +3,16 @@
 
 #include <stdbool.h>
 
-typedef enum {
+typedef enum
+{
     DRIVE_SPEED_SLOW,
     DRIVE_SPEED_MEDIUM,
     DRIVE_SPEED_FAST,
     DRIVE_SPEED_FASTEST
 } drive_speed_t;
 
-typedef enum {
+typedef enum
+{
     DRIVE_FORWARD,
     DRIVE_REVERSE,
     DRIVE_ROTATE_LEFT,

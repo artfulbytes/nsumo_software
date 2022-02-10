@@ -57,6 +57,13 @@ SOURCES = main.c \
           external/printf/printf.c \
           timer.c \
 
+FILES_TO_FORMAT = *.c \
+                  *.h \
+                  drivers/*.h \
+                  drivers/*.c \
+                  state_machine/*.c \
+                  state_machine/*.h \
+
 OBJECT_NAMES = $(SOURCES:.c=.o)
 OBJECTS = $(patsubst %,$(OBJ_DIR)/%,$(OBJECT_NAMES))
 # Allow passing macro defines as parameter to make (e.g. "make DEFINES="BUILD_TEST")
@@ -88,12 +95,15 @@ $(OBJ_DIR)/%.o: %.c
 ###########################################################
 # Phony targets
 ###########################################################
-.PHONY: all clean flash mspdeb mspgdb size readelf disassemble
+.PHONY: all format clean flash mspdeb mspgdb size readelf disassemble
 
 all: $(TARGET)
 
 clean:
 	$(RM) $(TARGET) $(OBJECTS)
+
+format:
+	clang-format -i --style=file $(FILES_TO_FORMAT)
 
 flash: $(TARGET)
 	$(DEBUG) tilib "prog $(TARGET)"

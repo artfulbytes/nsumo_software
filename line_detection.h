@@ -1,7 +1,8 @@
 #ifndef LINE_DETECTION_H
 #define LINE_DETECTION_H
 
-typedef enum {
+typedef enum
+{
     LINE_DETECTION_NONE,
     LINE_DETECTION_FRONT,
     LINE_DETECTION_BACK,
@@ -17,6 +18,6 @@ typedef enum {
 
 void line_detection_init(void);
 line_detection_t line_detection_get(void);
-const char* line_detection_str(line_detection_t line_detection);
+const char *line_detection_str(line_detection_t line_detection);
 
 #endif /* LINE_DETECTION_H */

@@ -5,7 +5,7 @@
 #define SEARCH_STATE_FORWARD_TIMEOUT (3000)
 
 main_state_t main_state_search(search_state_data_t *search_data, bool entered,
-                                      const detection_t *detection, const detection_history_t *hist)
+                               const detection_t *detection, const detection_history_t *hist)
 {
     search_state_t next_search_state = search_data->current_state;
     if (entered) {

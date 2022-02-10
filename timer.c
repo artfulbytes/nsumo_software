@@ -5,10 +5,7 @@
 #include "microcontroller_c_bindings.h"
 #endif
 
-void timer_start(timer_t *timer)
-{
-    *timer = millis();
-}
+void timer_start(timer_t *timer) { *timer = millis(); }
 
 uint32_t timer_ms_elapsed(const timer_t *timer)
 {

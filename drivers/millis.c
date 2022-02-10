@@ -2,10 +2,7 @@
 #include <msp430.h>
 
 static volatile uint32_t watchdog_interrupt_cnt = 0;
-void __attribute__ ((interrupt(WDT_VECTOR))) watchdog_isr (void)
-{
-    watchdog_interrupt_cnt++;
-}
+void __attribute__((interrupt(WDT_VECTOR))) watchdog_isr(void) { watchdog_interrupt_cnt++; }
 
 uint32_t millis()
 {

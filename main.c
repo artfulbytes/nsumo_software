@@ -9,7 +9,8 @@ int main(void)
 {
     hw_init();
     if (!TRACE_INIT()) {
-        while (1);
+        while (1)
+            ;
     }
     TRACE_NOPREFIX("Booted");
 
@@ -21,5 +22,6 @@ int main(void)
 #endif
 
     // TODO: Disable everything and endless loop in case of failure
-    while (1);
+    while (1)
+        ;
 }

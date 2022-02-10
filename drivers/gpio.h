@@ -6,20 +6,19 @@
 
 /* Each GPIO pin is represented as a uint16_t containing
  * [PIN_IDX (4-bit) | PORT (4-bit) | PIN (8-bit)] */
-#define GPIO_PIN_IDX_OFFSET             (12u)
-#define GPIO_PIN_IDX_MASK               (0xFu << GPIO_PIN_IDX_OFFSET)
-#define GPIO_PIN_IDX(gpio)              ((gpio & GPIO_PIN_IDX_MASK) >> GPIO_PIN_IDX_OFFSET)
-#define GPIO_PORT_OFFSET                (8u)
-#define GPIO_PORT_MASK                  (0xFu << GPIO_PORT_OFFSET)
-#define GPIO_PORT(gpio)                 ((gpio & GPIO_PORT_MASK) >> GPIO_PORT_OFFSET)
-#define GPIO_PIN_MASK                   (0xFFu)
-#define GPIO_PIN(gpio)                  (gpio & GPIO_PIN_MASK)
-#define GPIO_PIN_IDX_TO_BIT(pin_idx)    (1 << pin_idx)
-#define GPIO_MAKE(pin_idx, port)        ((pin_idx << GPIO_PIN_IDX_OFFSET) \
-                                         | (port << GPIO_PORT_OFFSET) \
-                                         | GPIO_PIN_IDX_TO_BIT(pin_idx))
-#define GPIO_PORT_CNT                   (3u)
-#define GPIO_PIN_CNT_PER_PORT           (8u)
+#define GPIO_PIN_IDX_OFFSET (12u)
+#define GPIO_PIN_IDX_MASK (0xFu << GPIO_PIN_IDX_OFFSET)
+#define GPIO_PIN_IDX(gpio) ((gpio & GPIO_PIN_IDX_MASK) >> GPIO_PIN_IDX_OFFSET)
+#define GPIO_PORT_OFFSET (8u)
+#define GPIO_PORT_MASK (0xFu << GPIO_PORT_OFFSET)
+#define GPIO_PORT(gpio) ((gpio & GPIO_PORT_MASK) >> GPIO_PORT_OFFSET)
+#define GPIO_PIN_MASK (0xFFu)
+#define GPIO_PIN(gpio) (gpio & GPIO_PIN_MASK)
+#define GPIO_PIN_IDX_TO_BIT(pin_idx) (1 << pin_idx)
+#define GPIO_MAKE(pin_idx, port)                                                                   \
+    ((pin_idx << GPIO_PIN_IDX_OFFSET) | (port << GPIO_PORT_OFFSET) | GPIO_PIN_IDX_TO_BIT(pin_idx))
+#define GPIO_PORT_CNT (3u)
+#define GPIO_PIN_CNT_PER_PORT (8u)
 
 #define GPIO_10 GPIO_MAKE(0, GPIO_PORT_1)
 #define GPIO_11 GPIO_MAKE(1, GPIO_PORT_1)
@@ -48,36 +47,42 @@
 #define GPIO_36 GPIO_MAKE(6, GPIO_PORT_3)
 #define GPIO_37 GPIO_MAKE(7, GPIO_PORT_3)
 
-typedef enum {
+typedef enum
+{
     GPIO_PORT_1,
     GPIO_PORT_2,
     GPIO_PORT_3
 } gpio_port_t;
 
-typedef enum {
+typedef enum
+{
     RESISTOR_DISABLED,
     RESISTOR_ENABLED
 } gpio_resistor_t;
 
-typedef enum {
+typedef enum
+{
     GPIO_OUTPUT,
     GPIO_INPUT
 } gpio_dir_t;
 
 /* For input this selects pull-up / pull-down if resistor enabled */
-typedef enum {
+typedef enum
+{
     GPIO_LOW,
     GPIO_HIGH
 } gpio_output_t;
 
-typedef enum {
+typedef enum
+{
     GPIO_SEL_GPIO,
     GPIO_SEL_1,
     GPIO_SEL_2,
     GPIO_SEL_3
 } gpio_selection_t;
 
-typedef enum {
+typedef enum
+{
     /* Port 1 */
     GPIO_LINE_DETECT_FRONT_RIGHT = GPIO_10,
     GPIO_UART_RXD = GPIO_11,
@@ -107,7 +112,8 @@ typedef enum {
     GPIO_MOTORS_RIGHT_CC_1 = GPIO_37,
 } gpio_t;
 
-typedef struct {
+typedef struct
+{
     gpio_t gpio;
     gpio_dir_t dir;
     gpio_output_t out;
@@ -115,13 +121,14 @@ typedef struct {
     gpio_selection_t selection;
 } gpio_config_t;
 
-typedef enum {
+typedef enum
+{
     TRIGGER_RISING,
     TRIGGER_FALLING,
 } trigger_t;
 
 void gpio_init(void);
-void gpio_configure(const gpio_config_t* config);
+void gpio_configure(const gpio_config_t *config);
 void gpio_set_direction(gpio_t gpio, gpio_dir_t direction);
 void gpio_set_output(gpio_t gpio, gpio_output_t output);
 bool gpio_get_input(gpio_t gpio);

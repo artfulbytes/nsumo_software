@@ -17,7 +17,8 @@ static attack_state_t enemy_detect_to_attack_state(const enemy_detection_t *enem
     }
 }
 
-main_state_t main_state_attack(attack_state_data_t *attack_data, bool entered, const detection_t *detection)
+main_state_t main_state_attack(attack_state_data_t *attack_data, bool entered,
+                               const detection_t *detection)
 {
     if (detection->line != LINE_DETECTION_NONE) {
         return MAIN_STATE_RETREAT;
@@ -36,8 +37,9 @@ main_state_t main_state_attack(attack_state_data_t *attack_data, bool entered, c
         //     Best way to break out of it? Increase power for a while...
         //     Timeout again? Sharp arc turn reverse
         // TODO: Try to break out of it:
-        //    (New attack state ATTACK_STATE_BREAKOUT_FAST_FORWARD) // Could get us to drive out on our own if unlucky...
-        //    (New attack state ATTACK_STATE_BREAKOUT_SHARP_LEFT_BACK) // Could get them to drive out on their own actually...
+        //    (New attack state ATTACK_STATE_BREAKOUT_FAST_FORWARD) // Could get us to drive out on
+        //    our own if unlucky... (New attack state ATTACK_STATE_BREAKOUT_SHARP_LEFT_BACK) //
+        //    Could get them to drive out on their own actually...
         //
         //
         SM_ASSERT(false, "Attack timeout");
@@ -45,8 +47,7 @@ main_state_t main_state_attack(attack_state_data_t *attack_data, bool entered, c
         return MAIN_STATE_ATTACK;
     }
 
-    switch (attack_data->current_state)
-    {
+    switch (attack_data->current_state) {
     case ATTACK_STATE_FORWARD:
         drive_set(DRIVE_FORWARD, false, DRIVE_SPEED_FASTEST);
         break;

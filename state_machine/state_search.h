@@ -6,12 +6,14 @@
 
 typedef uint32_t timer_t;
 
-typedef enum {
+typedef enum
+{
     SEARCH_STATE_ROTATE,
     SEARCH_STATE_FORWARD,
 } search_state_t;
 
-typedef struct {
+typedef struct
+{
     search_state_t current_state;
     // TODO: Rework like attack state so we can remove this:
     bool entered_new_state;

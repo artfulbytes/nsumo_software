@@ -15,7 +15,8 @@
 #include "line_detection.h"
 #include "trace.h"
 
-typedef struct {
+typedef struct
+{
     detection_history_t history;
     search_state_data_t search_data;
     attack_state_data_t attack_data;
@@ -24,7 +25,7 @@ typedef struct {
 
 static const char *main_state_str(main_state_t main_state)
 {
-    static const char* main_state_map[] = {
+    static const char *main_state_map[] = {
         [MAIN_STATE_SEARCH] = "ST_SEARCH",
         [MAIN_STATE_ATTACK] = "ST_ATTACK",
         [MAIN_STATE_RETREAT] = "ST_RETREAT",
@@ -64,13 +65,11 @@ void state_machine_run()
     main_state_t current_state = MAIN_STATE_SEARCH;
     main_state_t next_state = current_state;
     bool entered_new_state = true;
-    state_machine_data_t sm_data = {0};
+    state_machine_data_t sm_data = { 0 };
     while (1) {
         /* Retrieve the input once every loop iteration */
-        const detection_t detection = {
-            .line = line_detection_get(),
-            .enemy = enemy_detection_get()
-        };
+        const detection_t detection = { .line = line_detection_get(),
+                                        .enemy = enemy_detection_get() };
         detection_history_save(&sm_data.history, &detection);
 
 #ifdef MCU_TEST_STATE
@@ -82,10 +81,10 @@ void state_machine_run()
             current_state = next_state = MAIN_STATE_TEST;
         }
 #endif
-        switch (current_state)
-        {
+        switch (current_state) {
         case MAIN_STATE_SEARCH: /* Drive around to find the enemy */
-            next_state = main_state_search(&sm_data.search_data, entered_new_state, &detection, &sm_data.history);
+            next_state = main_state_search(&sm_data.search_data, entered_new_state, &detection,
+                                           &sm_data.history);
             break;
         case MAIN_STATE_ATTACK: /* Enemy detected so attack it */
         {

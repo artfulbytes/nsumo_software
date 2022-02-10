@@ -29,49 +29,55 @@ typedef enum
     STATE_RIGHT
 } robot_state_t;
 
-static const robot_command_t ir_key_to_robot_command[] =
-{
-    [IR_KEY_1] = ROBOT_SET_SPEED_10,
-    [IR_KEY_2] = ROBOT_SET_SPEED_20,
-    [IR_KEY_3] = ROBOT_SET_SPEED_30,
-    [IR_KEY_4] = ROBOT_SET_SPEED_40,
-    [IR_KEY_5] = ROBOT_SET_SPEED_50,
-    [IR_KEY_6] = ROBOT_SET_SPEED_60,
-    [IR_KEY_7] = ROBOT_SET_SPEED_70,
-    [IR_KEY_8] = ROBOT_SET_SPEED_80,
-    [IR_KEY_9] = ROBOT_SET_SPEED_90,
-    [IR_KEY_0] = ROBOT_SET_SPEED_100,
-    [IR_KEY_STAR] = ROBOT_STOP,
-    [IR_KEY_HASH] = ROBOT_STOP,
-    [IR_KEY_UP] = ROBOT_FORWARD,
-    [IR_KEY_DOWN] = ROBOT_REVERSE,
-    [IR_KEY_LEFT] = ROBOT_LEFT,
-    [IR_KEY_RIGHT] = ROBOT_RIGHT,
-    [IR_KEY_OK] = ROBOT_STOP,
-    [IR_KEY_NONE] = ROBOT_STOP
+static const robot_command_t ir_key_to_robot_command[] = {
+    [IR_KEY_1] = ROBOT_SET_SPEED_10, [IR_KEY_2] = ROBOT_SET_SPEED_20,
+    [IR_KEY_3] = ROBOT_SET_SPEED_30, [IR_KEY_4] = ROBOT_SET_SPEED_40,
+    [IR_KEY_5] = ROBOT_SET_SPEED_50, [IR_KEY_6] = ROBOT_SET_SPEED_60,
+    [IR_KEY_7] = ROBOT_SET_SPEED_70, [IR_KEY_8] = ROBOT_SET_SPEED_80,
+    [IR_KEY_9] = ROBOT_SET_SPEED_90, [IR_KEY_0] = ROBOT_SET_SPEED_100,
+    [IR_KEY_STAR] = ROBOT_STOP,      [IR_KEY_HASH] = ROBOT_STOP,
+    [IR_KEY_UP] = ROBOT_FORWARD,     [IR_KEY_DOWN] = ROBOT_REVERSE,
+    [IR_KEY_LEFT] = ROBOT_LEFT,      [IR_KEY_RIGHT] = ROBOT_RIGHT,
+    [IR_KEY_OK] = ROBOT_STOP,        [IR_KEY_NONE] = ROBOT_STOP
 };
 
 // TODO: struct for holding speed and state?
 static robot_state_t current_state = STATE_STOP;
 static uint16_t current_speed = 0;
 
-static uint16_t state_machine_command_to_speed(robot_command_t command) {
-    switch(command) {
-    case ROBOT_SET_SPEED_10: return 10;
-    case ROBOT_SET_SPEED_20: return 20;
-    case ROBOT_SET_SPEED_30: return 30;
-    case ROBOT_SET_SPEED_40: return 40;
-    case ROBOT_SET_SPEED_50: return 50;
-    case ROBOT_SET_SPEED_60: return 60;
-    case ROBOT_SET_SPEED_70: return 70;
-    case ROBOT_SET_SPEED_80: return 80;
-    case ROBOT_SET_SPEED_90: return 80;
-    case ROBOT_SET_SPEED_100: return 100;
-    case ROBOT_FORWARD: return 0;
-    case ROBOT_LEFT: return 0;
-    case ROBOT_REVERSE: return 0;
-    case ROBOT_RIGHT: return 0;
-    case ROBOT_STOP: return 0;
+static uint16_t state_machine_command_to_speed(robot_command_t command)
+{
+    switch (command) {
+    case ROBOT_SET_SPEED_10:
+        return 10;
+    case ROBOT_SET_SPEED_20:
+        return 20;
+    case ROBOT_SET_SPEED_30:
+        return 30;
+    case ROBOT_SET_SPEED_40:
+        return 40;
+    case ROBOT_SET_SPEED_50:
+        return 50;
+    case ROBOT_SET_SPEED_60:
+        return 60;
+    case ROBOT_SET_SPEED_70:
+        return 70;
+    case ROBOT_SET_SPEED_80:
+        return 80;
+    case ROBOT_SET_SPEED_90:
+        return 80;
+    case ROBOT_SET_SPEED_100:
+        return 100;
+    case ROBOT_FORWARD:
+        return 0;
+    case ROBOT_LEFT:
+        return 0;
+    case ROBOT_REVERSE:
+        return 0;
+    case ROBOT_RIGHT:
+        return 0;
+    case ROBOT_STOP:
+        return 0;
     }
     return 0;
 }
@@ -143,7 +149,7 @@ static void handle_speed_command(robot_command_t speed_command)
 {
     uint16_t new_speed = state_machine_command_to_speed(speed_command);
 
-    switch(current_state) {
+    switch (current_state) {
     case STATE_STOP:
         break;
     case STATE_FORWARD:
@@ -174,7 +180,7 @@ void state_machine_ir_handle_key(ir_key_t key)
 
     robot_command_t robot_command = ir_key_to_robot_command[key];
     robot_state_t new_state = current_state;
-    switch(robot_command) {
+    switch (robot_command) {
     case ROBOT_STOP:
         new_state = handle_stop_command();
         break;
@@ -206,8 +212,4 @@ void state_machine_ir_handle_key(ir_key_t key)
     current_state = new_state;
 }
 
-void state_machine_ir_init()
-{
-    motor_init();
-}
-
+void state_machine_ir_init() { motor_init(); }

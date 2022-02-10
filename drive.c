@@ -3,7 +3,8 @@
 
 #define DUTY_CYCLE_STOP (0)
 
-typedef struct {
+typedef struct
+{
     int8_t left;
     int8_t right;
 } duty_cycles_t;
@@ -129,7 +130,4 @@ void drive_set(drive_t drive, bool reverse, drive_speed_t drive_speed)
     motor_set_duty_cycle(MOTORS_RIGHT, right);
 }
 
-void drive_init()
-{
-    motor_init();
-}
+void drive_init() { motor_init(); }

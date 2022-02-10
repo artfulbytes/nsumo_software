@@ -17,10 +17,7 @@
 #define DUTY_CYCLE_MAX (100)
 #define DUTY_CYCLE_TO_TA0CCR(duty_cycle) (duty_cycle * TA0CCR_FACTOR)
 
-static void set_pwm_period()
-{
-    TA0CCR0 = TA0CCRO_PERIOD_VALUE - 1;
-}
+static void set_pwm_period() { TA0CCR0 = TA0CCRO_PERIOD_VALUE - 1; }
 
 /* Set up timer 1 for PWM control
  * Output of capture&compare channel 1 is PWM_OUT_0
@@ -55,14 +52,12 @@ void pwm_init()
 // TODO: Look at renaming pwm to with motrs instead...
 void pwm_set_duty_cycle(pwm_out_t pwm_out, uint16_t duty_cycle_percent)
 {
-    if (duty_cycle_percent > 100)
-    {
+    if (duty_cycle_percent > 100) {
         duty_cycle_percent = 100;
     }
     /* TODO: We might be off by 1 here, when does the interrupt occur at duty_cycle_percent or
      * at duty_cycle_percent - 1?, shouldn't matter in practice though. */
-    switch (pwm_out)
-    {
+    switch (pwm_out) {
     case PWM_OUT_0:
         TA0CCR1 = DUTY_CYCLE_TO_TA0CCR(duty_cycle_percent);
         break;

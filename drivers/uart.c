@@ -39,7 +39,8 @@ bool uart_init(void)
 void _putchar(char character)
 {
     /* Wait for the transfer buffer */
-    while (!(IFG2 & UCA0TXIFG));
+    while (!(IFG2 & UCA0TXIFG))
+        ;
 
     /* Transmit the character */
     UCA0TXBUF = character;
@@ -47,7 +48,8 @@ void _putchar(char character)
     /* If we get a line-feed, add a carriage return to make new line work
      * properly on the other end. */
     if (character == '\n') {
-        while (!(IFG2 & UCA0TXIFG));
+        while (!(IFG2 & UCA0TXIFG))
+            ;
         UCA0TXBUF = '\r';
     }
 }

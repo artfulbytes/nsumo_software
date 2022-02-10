@@ -3,14 +3,15 @@
 #include "timer.h"
 
 #define MOVE_MAX_CNT (3)
-typedef struct {
+typedef struct
+{
     move_t moves[MOVE_MAX_CNT];
     uint8_t cnt;
 } retreat_moves_t;
 
 static const char *retreat_state_str(retreat_state_t retreat_state)
 {
-    static const char* retreat_state_map[] = {
+    static const char *retreat_state_map[] = {
         [RETREAT_STATE_NONE] = "RET_NONE",
         [RETREAT_STATE_DRIVE_REVERSE] = "RET_REVERSE",
         [RETREAT_STATE_DRIVE_FORWARD] = "RET_FORWARD",
@@ -92,7 +93,8 @@ static bool is_retreat_move_done(retreat_state_data_t *data)
     return timer_ms_elapsed(&data->timer) >= get_current_retreat_move(data)->duration;
 }
 
-main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool entered, const detection_t *detection)
+main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool entered,
+                                const detection_t *detection)
 {
     retreat_state_t next_retreat_state = retreat_data->current_state;
     if (entered) {
@@ -173,21 +175,26 @@ main_state_t main_state_retreat(retreat_state_data_t *retreat_data, bool entered
         break;
     }
 
-
     if (retreat_data->current_state != next_retreat_state
-        || detection->line != LINE_DETECTION_NONE /* Keep resetting the time until we no longer detect line */
+        || detection->line
+            != LINE_DETECTION_NONE /* Keep resetting the time until we no longer detect line */
     ) {
         if (retreat_data->current_state != next_retreat_state) {
-            TRACE_NOPREFIX("New retreat state %s %s", retreat_state_str(next_retreat_state), line_detection_str(detection->line));
+            TRACE_NOPREFIX("New retreat state %s %s", retreat_state_str(next_retreat_state),
+                           line_detection_str(detection->line));
         }
         retreat_data->current_state = next_retreat_state;
         retreat_data->move_idx = 0;
-        start_retreat_move(retreat_data, &retreat_moves[retreat_data->current_state].moves[retreat_data->move_idx]);
+        start_retreat_move(
+            retreat_data,
+            &retreat_moves[retreat_data->current_state].moves[retreat_data->move_idx]);
     } else {
         if (is_retreat_move_done(retreat_data)) {
             retreat_data->move_idx++;
             if (retreat_data->move_idx < retreat_moves[retreat_data->current_state].cnt) {
-                start_retreat_move(retreat_data, &retreat_moves[retreat_data->current_state].moves[retreat_data->move_idx]);
+                start_retreat_move(
+                    retreat_data,
+                    &retreat_moves[retreat_data->current_state].moves[retreat_data->move_idx]);
             } else {
                 return MAIN_STATE_SEARCH;
             }

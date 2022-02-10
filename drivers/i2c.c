@@ -34,10 +34,12 @@ static bool start_transfer(addr_size_t addr_size, uint16_t addr)
         break;
     }
 
-    while (UCB0CTL1 & UCTXSTT); /* Wait for start condition to be sent */
+    while (UCB0CTL1 & UCTXSTT)
+        ; /* Wait for start condition to be sent */
     success = !(UCB0STAT & UCNACKIFG);
     if (success) {
-        while (!(IFG2 & UCB0TXIFG)); /* Wait for byte to be sent */
+        while (!(IFG2 & UCB0TXIFG))
+            ; /* Wait for byte to be sent */
         success = !(UCB0STAT & UCNACKIFG);
     }
 
@@ -47,7 +49,8 @@ static bool start_transfer(addr_size_t addr_size, uint16_t addr)
             break;
         case ADDR_SIZE_16BIT:
             UCB0TXBUF = addr & 0xFF; /* Send the least significant byte of the 16-bit address */
-            while (!(IFG2 & UCB0TXIFG)); /* Wait for byte to be sent */
+            while (!(IFG2 & UCB0TXIFG))
+                ; /* Wait for byte to be sent */
             success = !(UCB0STAT & UCNACKIFG);
             break;
         }
@@ -58,7 +61,8 @@ static bool start_transfer(addr_size_t addr_size, uint16_t addr)
 static void stop_transfer()
 {
     UCB0CTL1 |= UCTXSTP; /* Send stop condition */
-    while (UCB0CTL1 & UCTXSTP); /* Wait for stop condition to be sent */
+    while (UCB0CTL1 & UCTXSTP)
+        ; /* Wait for stop condition to be sent */
 }
 
 /* Read a register of size reg_size at address addr.
@@ -74,7 +78,8 @@ static bool read_reg(addr_size_t addr_size, uint16_t addr, reg_size_t reg_size, 
     /* Address sent, now configure as receiver and get the data */
     UCB0CTL1 &= ~UCTR; /* Set as a receiver */
     UCB0CTL1 |= UCTXSTT; /* Send (repeating) start condition (including address of slave) */
-    while (UCB0CTL1 & UCTXSTT); /* Wait for start condition to be sent */
+    while (UCB0CTL1 & UCTXSTT)
+        ; /* Wait for start condition to be sent */
     success = !(UCB0STAT & UCNACKIFG);
     if (success) {
         switch (reg_size) {
@@ -82,28 +87,34 @@ static bool read_reg(addr_size_t addr_size, uint16_t addr, reg_size_t reg_size, 
             break;
         case REG_SIZE_16BIT:
             /* Bytes are read from most to least significant */
-            while ((IFG2 & UCB0RXIFG) == 0); /* Wait for byte before reading the buffer */
+            while ((IFG2 & UCB0RXIFG) == 0)
+                ; /* Wait for byte before reading the buffer */
             data[1] = UCB0RXBUF; /* RX interrupt is cleared automatically afterwards */
             break;
         case REG_SIZE_32BIT:
             /* Bytes are read from most to least significant */
-            while ((IFG2 & UCB0RXIFG) == 0);
+            while ((IFG2 & UCB0RXIFG) == 0)
+                ;
             data[3] = UCB0RXBUF;
-            while ((IFG2 & UCB0RXIFG) == 0);
+            while ((IFG2 & UCB0RXIFG) == 0)
+                ;
             data[2] = UCB0RXBUF;
-            while ((IFG2 & UCB0RXIFG) == 0);
+            while ((IFG2 & UCB0RXIFG) == 0)
+                ;
             data[1] = UCB0RXBUF;
             break;
         }
         stop_transfer();
-        while ((IFG2 & UCB0RXIFG) == 0); /* Wait for byte before reading the buffer */
+        while ((IFG2 & UCB0RXIFG) == 0)
+            ; /* Wait for byte before reading the buffer */
         data[0] = UCB0RXBUF; /* RX interrupt is cleared automatically afterwards */
     }
 
     return success;
 }
 
-static bool read_reg_bytes(addr_size_t addr_size, uint16_t addr, uint8_t *bytes, uint16_t byte_count)
+static bool read_reg_bytes(addr_size_t addr_size, uint16_t addr, uint8_t *bytes,
+                           uint16_t byte_count)
 {
     bool success = false;
     bool transfer_stopped = false;
@@ -115,7 +126,8 @@ static bool read_reg_bytes(addr_size_t addr_size, uint16_t addr, uint8_t *bytes,
     /* Address sent, now configure as receiver and get the value */
     UCB0CTL1 &= ~UCTR; /* Set as a receiver */
     UCB0CTL1 |= UCTXSTT; /* Send (repeating) start condition (including address of slave) */
-    while (UCB0CTL1 & UCTXSTT); /* Wait for start condition to be sent */
+    while (UCB0CTL1 & UCTXSTT)
+        ; /* Wait for start condition to be sent */
     success = !(UCB0STAT & UCNACKIFG);
     if (success) {
         for (uint16_t i = 0; i < byte_count; i++) {
@@ -125,7 +137,8 @@ static bool read_reg_bytes(addr_size_t addr_size, uint16_t addr, uint8_t *bytes,
             }
             success = !(UCB0STAT & UCNACKIFG);
             if (success) {
-                while ((IFG2 & UCB0RXIFG) == 0); /* Wait for byte before reading the buffer */
+                while ((IFG2 & UCB0RXIFG) == 0)
+                    ; /* Wait for byte before reading the buffer */
                 bytes[i] = UCB0RXBUF; /* RX interrupt is cleared automatically afterwards */
             } else {
                 break;
@@ -190,7 +203,8 @@ static bool write_reg(addr_size_t addr_size, uint16_t addr, reg_size_t reg_size,
         break;
     case REG_SIZE_16BIT:
         UCB0TXBUF = (data >> 8) & 0xFF; /* Start with the most significant byte */
-        while (!(IFG2 & UCB0TXIFG)); /* Wait for byte to be sent */
+        while (!(IFG2 & UCB0TXIFG))
+            ; /* Wait for byte to be sent */
         success = !(UCB0STAT & UCNACKIFG);
         break;
     case REG_SIZE_32BIT:
@@ -200,7 +214,8 @@ static bool write_reg(addr_size_t addr_size, uint16_t addr, reg_size_t reg_size,
 
     if (success) {
         UCB0TXBUF = 0xFF & data; /* Send the least significant byte */
-        while (!(IFG2 & UCB0TXIFG)); /* Wait for byte to be sent */
+        while (!(IFG2 & UCB0TXIFG))
+            ; /* Wait for byte to be sent */
         success = !(UCB0STAT & UCNACKIFG);
     }
 
@@ -208,7 +223,8 @@ static bool write_reg(addr_size_t addr_size, uint16_t addr, reg_size_t reg_size,
     return success;
 }
 
-static bool write_reg_bytes(addr_size_t addr_size, uint16_t addr, uint8_t *bytes, uint16_t byte_count)
+static bool write_reg_bytes(addr_size_t addr_size, uint16_t addr, uint8_t *bytes,
+                            uint16_t byte_count)
 {
     bool success = false;
 
@@ -218,7 +234,8 @@ static bool write_reg_bytes(addr_size_t addr_size, uint16_t addr, uint8_t *bytes
 
     for (uint16_t i = 0; i < byte_count; i++) {
         UCB0TXBUF = bytes[i];
-        while (!(IFG2 & UCB0TXIFG)); /* Wait for byte to be sent */
+        while (!(IFG2 & UCB0TXIFG))
+            ; /* Wait for byte to be sent */
         success = !(UCB0STAT & UCNACKIFG);
         if (!success) {
             break;
@@ -253,10 +270,7 @@ bool i2c_write_addr8_bytes(uint8_t start_addr, uint8_t *bytes, uint16_t byte_cou
     return write_reg_bytes(ADDR_SIZE_8BIT, start_addr, bytes, byte_count);
 }
 
-void i2c_set_slave_address(uint8_t addr)
-{
-    UCB0I2CSA = addr;
-}
+void i2c_set_slave_address(uint8_t addr) { UCB0I2CSA = addr; }
 
 bool i2c_init()
 {

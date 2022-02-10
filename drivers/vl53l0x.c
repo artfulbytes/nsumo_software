@@ -60,8 +60,7 @@ typedef enum
     CALIBRATION_TYPE_PHASE
 } calibration_type_t;
 
-static const vl53l0x_info_t vl53l0x_infos[] =
-{
+static const vl53l0x_info_t vl53l0x_infos[] = {
     [VL53L0X_IDX_FRONT] = { .addr = 0x30, .xshut_gpio = GPIO_XSHUT_FRONT },
     [VL53L0X_IDX_LEFT] = { .addr = 0x31, .xshut_gpio = GPIO_XSHUT_LEFT },
     [VL53L0X_IDX_RIGHT] = { .addr = 0x32, .xshut_gpio = GPIO_XSHUT_RIGHT },
@@ -152,14 +151,15 @@ static bool read_strobe()
  * are also saved during the calibration step at ST factory and can be retrieved
  * from NVM.
  */
-static bool get_spad_info_from_nvm(uint8_t *spad_count, uint8_t *spad_type, uint8_t good_spad_map[6])
+static bool get_spad_info_from_nvm(uint8_t *spad_count, uint8_t *spad_type,
+                                   uint8_t good_spad_map[6])
 {
     bool success = false;
     uint8_t tmp_data8 = 0;
     uint32_t tmp_data32 = 0;
 
     /* Setup to read from NVM */
-    success  = i2c_write_addr8_data8(0x80, 0x01);
+    success = i2c_write_addr8_data8(0x80, 0x01);
     success &= i2c_write_addr8_data8(0xFF, 0x01);
     success &= i2c_write_addr8_data8(0x00, 0x00);
     success &= i2c_write_addr8_data8(0xFF, 0x06);
@@ -169,7 +169,7 @@ static bool get_spad_info_from_nvm(uint8_t *spad_count, uint8_t *spad_type, uint
     success &= i2c_write_addr8_data8(0x81, 0x01);
     success &= i2c_write_addr8_data8(0x80, 0x01);
     if (!success) {
-      return false;
+        return false;
     }
 
     /* Get the SPAD count and type */
@@ -221,14 +221,14 @@ static bool get_spad_info_from_nvm(uint8_t *spad_count, uint8_t *spad_type, uint
 #endif
 
     /* Restore after reading from NVM */
-    success &=i2c_write_addr8_data8(0x81, 0x00);
-    success &=i2c_write_addr8_data8(0xFF, 0x06);
-    success &=i2c_read_addr8_data8(0x83, &tmp_data8);
-    success &=i2c_write_addr8_data8(0x83, tmp_data8 & 0xfb);
-    success &=i2c_write_addr8_data8(0xFF, 0x01);
-    success &=i2c_write_addr8_data8(0x00, 0x01);
-    success &=i2c_write_addr8_data8(0xFF, 0x00);
-    success &=i2c_write_addr8_data8(0x80, 0x00);
+    success &= i2c_write_addr8_data8(0x81, 0x00);
+    success &= i2c_write_addr8_data8(0xFF, 0x06);
+    success &= i2c_read_addr8_data8(0x83, &tmp_data8);
+    success &= i2c_write_addr8_data8(0x83, tmp_data8 & 0xfb);
+    success &= i2c_write_addr8_data8(0xFF, 0x01);
+    success &= i2c_write_addr8_data8(0x00, 0x01);
+    success &= i2c_write_addr8_data8(0xFF, 0x00);
+    success &= i2c_write_addr8_data8(0x80, 0x00);
 
     /* When we haven't configured the SPAD map yet, the SPAD map register actually
      * contains the good SPAD map, so we can retrieve it straight from this register
@@ -304,7 +304,8 @@ static bool set_spads_from_nvm()
     }
 
     /* Write the new SPAD configuration */
-    if (!i2c_write_addr8_bytes(REG_GLOBAL_CONFIG_SPAD_ENABLES_REF_0, spad_map, SPAD_MAP_ROW_COUNT)) {
+    if (!i2c_write_addr8_bytes(REG_GLOBAL_CONFIG_SPAD_ENABLES_REF_0, spad_map,
+                               SPAD_MAP_ROW_COUNT)) {
         return false;
     }
 
@@ -431,20 +432,15 @@ typedef enum
 
 /* Reads/Writes to this can be considered atomic on MSP430 */
 static volatile status_multiple_t status_multiple = STATUS_MULTIPLE_NOT_STARTED;
-static void front_measurement_done_isr()
-{
-    status_multiple = STATUS_MULTIPLE_DONE;
-}
+static void front_measurement_done_isr() { status_multiple = STATUS_MULTIPLE_DONE; }
 
 static void configure_front_sensor_interrupt()
 {
-    const gpio_config_t gpio_config = {
-        .gpio = GPIO_RANGE_SENSOR_FRONT_INT,
-        .dir = GPIO_INPUT,
-        .out = GPIO_LOW,
-        .resistor = RESISTOR_ENABLED,
-        .selection = GPIO_SEL_GPIO
-    };
+    const gpio_config_t gpio_config = { .gpio = GPIO_RANGE_SENSOR_FRONT_INT,
+                                        .dir = GPIO_INPUT,
+                                        .out = GPIO_LOW,
+                                        .resistor = RESISTOR_ENABLED,
+                                        .selection = GPIO_SEL_GPIO };
     gpio_configure(&gpio_config);
     gpio_enable_interrupt(GPIO_RANGE_SENSOR_FRONT_INT);
     gpio_set_interrupt_trigger(GPIO_RANGE_SENSOR_FRONT_INT, TRIGGER_FALLING);
@@ -476,9 +472,8 @@ static bool static_init()
         return false;
     }
 
-    if (!set_sequence_steps_enabled(RANGE_SEQUENCE_STEP_DSS +
-                                    RANGE_SEQUENCE_STEP_PRE_RANGE +
-                                    RANGE_SEQUENCE_STEP_FINAL_RANGE)) {
+    if (!set_sequence_steps_enabled(RANGE_SEQUENCE_STEP_DSS + RANGE_SEQUENCE_STEP_PRE_RANGE
+                                    + RANGE_SEQUENCE_STEP_FINAL_RANGE)) {
         return false;
     }
 
@@ -489,8 +484,7 @@ static bool perform_single_ref_calibration(calibration_type_t calib_type)
 {
     uint8_t sysrange_start = 0;
     uint8_t sequence_config = 0;
-    switch (calib_type)
-    {
+    switch (calib_type) {
     case CALIBRATION_TYPE_VHV:
         sequence_config = 0x01;
         sysrange_start = 0x01 | 0x40;
@@ -538,9 +532,8 @@ static bool perform_ref_calibration()
         return false;
     }
     /* Restore sequence steps enabled */
-    if (!set_sequence_steps_enabled(RANGE_SEQUENCE_STEP_DSS +
-                                    RANGE_SEQUENCE_STEP_PRE_RANGE +
-                                    RANGE_SEQUENCE_STEP_FINAL_RANGE)) {
+    if (!set_sequence_steps_enabled(RANGE_SEQUENCE_STEP_DSS + RANGE_SEQUENCE_STEP_PRE_RANGE
+                                    + RANGE_SEQUENCE_STEP_FINAL_RANGE)) {
         return false;
     }
     return true;
@@ -567,16 +560,16 @@ static void set_hardware_standby(vl53l0x_idx_t idx, bool enable)
  **/
 static void configure_xshut_pins()
 {
-    const gpio_config_t gpio_cfg_front = {GPIO_XSHUT_FRONT, GPIO_OUTPUT, GPIO_LOW,
-                                          RESISTOR_DISABLED, GPIO_SEL_GPIO};
-    const gpio_config_t gpio_cfg_left = {GPIO_XSHUT_LEFT, GPIO_OUTPUT, GPIO_LOW,
-                                         RESISTOR_DISABLED, GPIO_SEL_GPIO};
-    const gpio_config_t gpio_cfg_right = {GPIO_XSHUT_RIGHT, GPIO_OUTPUT, GPIO_LOW,
-                                          RESISTOR_DISABLED, GPIO_SEL_GPIO};
-    const gpio_config_t gpio_cfg_front_left = {GPIO_XSHUT_FRONT_LEFT, GPIO_OUTPUT, GPIO_LOW,
-                                                RESISTOR_DISABLED, GPIO_SEL_GPIO};
-    const gpio_config_t gpio_cfg_front_right = {GPIO_XSHUT_FRONT_RIGHT, GPIO_OUTPUT, GPIO_LOW,
-                                                RESISTOR_DISABLED, GPIO_SEL_GPIO};
+    const gpio_config_t gpio_cfg_front = { GPIO_XSHUT_FRONT, GPIO_OUTPUT, GPIO_LOW,
+                                           RESISTOR_DISABLED, GPIO_SEL_GPIO };
+    const gpio_config_t gpio_cfg_left = { GPIO_XSHUT_LEFT, GPIO_OUTPUT, GPIO_LOW, RESISTOR_DISABLED,
+                                          GPIO_SEL_GPIO };
+    const gpio_config_t gpio_cfg_right = { GPIO_XSHUT_RIGHT, GPIO_OUTPUT, GPIO_LOW,
+                                           RESISTOR_DISABLED, GPIO_SEL_GPIO };
+    const gpio_config_t gpio_cfg_front_left = { GPIO_XSHUT_FRONT_LEFT, GPIO_OUTPUT, GPIO_LOW,
+                                                RESISTOR_DISABLED, GPIO_SEL_GPIO };
+    const gpio_config_t gpio_cfg_front_right = { GPIO_XSHUT_FRONT_RIGHT, GPIO_OUTPUT, GPIO_LOW,
+                                                 RESISTOR_DISABLED, GPIO_SEL_GPIO };
 
     gpio_configure(&gpio_cfg_front);
     gpio_configure(&gpio_cfg_left);
@@ -777,8 +770,8 @@ bool start_measuring_multiple()
     }
     status_multiple = STATUS_MULTIPLE_MEASURING;
     bool success = start_sysrange(VL53L0X_IDX_FRONT);
-    //success &= start_sysrange(VL53L0X_IDX_LEFT);
-    //success &= start_sysrange(VL53L0X_IDX_RIGHT);
+    // success &= start_sysrange(VL53L0X_IDX_LEFT);
+    // success &= start_sysrange(VL53L0X_IDX_RIGHT);
     success &= start_sysrange(VL53L0X_IDX_FRONT_LEFT);
     success &= start_sysrange(VL53L0X_IDX_FRONT_RIGHT);
     return success;
@@ -803,26 +796,28 @@ bool vl53l0x_read_range_multiple(vl53l0x_ranges_t ranges, bool *fresh_values)
             return false;
         }
         /* Block here the first time */
-        while (status_multiple != STATUS_MULTIPLE_DONE);
+        while (status_multiple != STATUS_MULTIPLE_DONE)
+            ;
     }
 
     if (status_multiple == STATUS_MULTIPLE_DONE
-        //&& is_sysrange_done(VL53L0X_IDX_FRONT) // We already know front is done because of its interrupt
+        //&& is_sysrange_done(VL53L0X_IDX_FRONT) // We already know front is done because of its
+        // interrupt
         //&& is_sysrange_done(VL53L0X_IDX_LEFT)
         //&& is_sysrange_done(VL53L0X_IDX_RIGHT)
-        && is_sysrange_done(VL53L0X_IDX_FRONT_LEFT)
-        && is_sysrange_done(VL53L0X_IDX_FRONT_RIGHT)
+        && is_sysrange_done(VL53L0X_IDX_FRONT_LEFT) && is_sysrange_done(VL53L0X_IDX_FRONT_RIGHT)
 
-        ) {
+    ) {
 
         if (!is_sysrange_done(VL53L0X_IDX_FRONT)) {
             // TODO: Keep this sanity check here for some time to ensure this is always true
-            while(1);
+            while (1)
+                ;
         }
 
         bool success = read_range(VL53L0X_IDX_FRONT, &latest_ranges[VL53L0X_IDX_FRONT]);
-        //success &= read_range(VL53L0X_IDX_LEFT, &latest_ranges[VL53L0X_IDX_LEFT]);
-        //success &= read_range(VL53L0X_IDX_RIGHT, &latest_ranges[VL53L0X_IDX_RIGHT]);
+        // success &= read_range(VL53L0X_IDX_LEFT, &latest_ranges[VL53L0X_IDX_LEFT]);
+        // success &= read_range(VL53L0X_IDX_RIGHT, &latest_ranges[VL53L0X_IDX_RIGHT]);
         success &= read_range(VL53L0X_IDX_FRONT_LEFT, &latest_ranges[VL53L0X_IDX_FRONT_LEFT]);
         success &= read_range(VL53L0X_IDX_FRONT_RIGHT, &latest_ranges[VL53L0X_IDX_FRONT_RIGHT]);
         if (success) {

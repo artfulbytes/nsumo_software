@@ -3,17 +3,17 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-static volatile uint16_t data_transfer_block[ADC_CHANNEL_CNT] = {0};
+static volatile uint16_t data_transfer_block[ADC_CHANNEL_CNT] = { 0 };
 static bool initialized = false;
-static bool adc_channel_enabled[ADC_CHANNEL_CNT] = {false};
-static volatile adc_values_t copied_adc_values = {0};
+static bool adc_channel_enabled[ADC_CHANNEL_CNT] = { false };
+static volatile adc_values_t copied_adc_values = { 0 };
 /* The DTO samples the channels contiguously, so this count will be larger than the
  * number of channels we actually use if they are not neighbouring channels. For example,
  * we may only use A0, A3, A4, but DTO still reads A1, A2. */
 static uint8_t dtc_channel_cnt = 0;
 static uint8_t last_chnl_idx = 0;
 
-void adc_init(adc_conf_t* adc_conf)
+void adc_init(adc_conf_t *adc_conf)
 {
     if (initialized) {
         return;
@@ -54,7 +54,7 @@ void adc_init(adc_conf_t* adc_conf)
 
 static uint32_t total_sample_cnt = 0;
 
-void __attribute__ ((interrupt(ADC10_VECTOR))) adc_isr (void)
+void __attribute__((interrupt(ADC10_VECTOR))) adc_isr(void)
 {
     for (int chnl = 0; chnl < ADC_CHANNEL_CNT; chnl++) {
         if (adc_channel_enabled[chnl]) {

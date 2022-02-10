@@ -3,22 +3,23 @@
 #include "pwm.h"
 #include "stdint.h"
 
-typedef struct {
+typedef struct
+{
     gpio_t cc_1;
     gpio_t cc_2;
     pwm_out_t pwm_out;
 } motor_control_t;
 
-typedef enum {
+typedef enum
+{
     MOTOR_MODE_STOP,
     MOTOR_MODE_FORWARD,
     MOTOR_MODE_REVERSE
 } motor_mode_t;
 
-static const motor_control_t motor_controls[] =
-{
-    [MOTORS_LEFT] = {GPIO_MOTORS_LEFT_CC_1, GPIO_MOTORS_LEFT_CC_2, PWM_OUT_0},
-    [MOTORS_RIGHT] = {GPIO_MOTORS_RIGHT_CC_1, GPIO_MOTORS_RIGHT_CC_2, PWM_OUT_1},
+static const motor_control_t motor_controls[] = {
+    [MOTORS_LEFT] = { GPIO_MOTORS_LEFT_CC_1, GPIO_MOTORS_LEFT_CC_2, PWM_OUT_0 },
+    [MOTORS_RIGHT] = { GPIO_MOTORS_RIGHT_CC_1, GPIO_MOTORS_RIGHT_CC_2, PWM_OUT_1 },
 };
 
 static void set_mode(motors_t motor, motor_mode_t mode)

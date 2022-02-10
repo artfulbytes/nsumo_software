@@ -1,18 +1,13 @@
 #include "led.h"
 #include "gpio.h"
 
-static const gpio_config_t p26_led_config = {
-    .gpio = GPIO_TEST_LED,
-    .dir = GPIO_OUTPUT,
-    .out = GPIO_HIGH,
-    .resistor = RESISTOR_DISABLED,
-    .selection = GPIO_SEL_GPIO
-};
+static const gpio_config_t p26_led_config = { .gpio = GPIO_TEST_LED,
+                                              .dir = GPIO_OUTPUT,
+                                              .out = GPIO_HIGH,
+                                              .resistor = RESISTOR_DISABLED,
+                                              .selection = GPIO_SEL_GPIO };
 
-void led_init()
-{
-    gpio_configure(&p26_led_config);
-}
+void led_init() { gpio_configure(&p26_led_config); }
 
 void led_set_enable(led_t led, bool enable)
 {

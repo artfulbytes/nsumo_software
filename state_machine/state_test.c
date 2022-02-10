@@ -1,7 +1,8 @@
 #include "state_test.h"
 #include "trace.h"
 
-typedef enum {
+typedef enum
+{
     TEST_STATE_NONE,
     TEST_STATE_DRIVE_REVERSE,
     TEST_STATE_DRIVE_FORWARD,
@@ -11,7 +12,7 @@ typedef enum {
 
 static const char *test_state_str(test_state_t test_state)
 {
-    static const char* test_state_map[] = {
+    static const char *test_state_map[] = {
         [TEST_STATE_NONE] = "TEST_STATE_NONE",
         [TEST_STATE_DRIVE_REVERSE] = "TEST_STATE_DRIVE_REVERSE",
         [TEST_STATE_DRIVE_FORWARD] = "TEST_STATE_DRIVE_FORWARD",

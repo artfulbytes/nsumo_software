@@ -2,7 +2,8 @@
 #define IR_REMOTE_H
 
 /* Corresponds to the buttons on the remote */
-typedef enum {
+typedef enum
+{
     IR_KEY_0,
     IR_KEY_1,
     IR_KEY_2,

@@ -5,7 +5,8 @@
 #include "state_common.h"
 
 #define HISTORY_SIZE (8)
-typedef struct {
+typedef struct
+{
     detection_t detections[HISTORY_SIZE];
     uint8_t idx;
 } detection_history_t;

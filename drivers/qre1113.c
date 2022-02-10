@@ -4,7 +4,7 @@
 
 void qre1113_init()
 {
-    adc_conf_t conf = { {false} };
+    adc_conf_t conf = { { false } };
     conf.enable[GPIO_PIN_IDX(GPIO_LINE_DETECT_FRONT_LEFT)] = true;
     conf.enable[GPIO_PIN_IDX(GPIO_LINE_DETECT_FRONT_RIGHT)] = true;
     conf.enable[GPIO_PIN_IDX(GPIO_LINE_DETECT_BACK_LEFT)] = true;
