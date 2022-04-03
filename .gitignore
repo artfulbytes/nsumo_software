@@ -9,3 +9,4 @@ targetConfigs/
 .ccsproject
 .project
 msp430g2553.ld
+.clangd/

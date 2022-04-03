@@ -12,8 +12,8 @@ RM = rm
 ###########################################################
 # Directories
 ###########################################################
-TI_CCS_DIR = /home/artfulbytes/ti/ccs910/ccs
-MSPGCC_ROOT_DIR = $(TI_CCS_DIR)/tools/compiler/msp430-gcc-8.2.0.52_linux64
+TI_CCS_DIR = /home/ab/dev/tools/ccs1110/ccs
+MSPGCC_ROOT_DIR = /home/ab/dev/tools/msp430-gcc
 MSPGCC_BIN_DIR = $(MSPGCC_ROOT_DIR)/bin
 MSP_DEBUG_BIN_DIR = $(TI_CCS_DIR)/ccs_base/DebugServer/bin
 MSP_DEBUG_DRIVERS_DIR = $(TI_CCS_DIR)/ccs_base/DebugServer/drivers
